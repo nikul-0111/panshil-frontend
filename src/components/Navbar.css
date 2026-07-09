@@ -1,0 +1,78 @@
+/* Existing Navbar CSS */
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+}
+
+/* Other existing CSS... */
+
+.nav-actions {
+  display: flex;
+  gap: 15px;
+}
+
+/* ======================================
+   ADD THE MOBILE RESPONSIVE CSS BELOW
+====================================== */
+
+.menu-toggle {
+  display: none;
+  border: none;
+  background: transparent;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+
+  .navbar {
+    padding: 15px;
+    position: relative;
+    flex-wrap: wrap;
+  }
+
+  .brand {
+    font-size: 20px;
+  }
+
+  .menu-toggle {
+    display: block;
+    margin-left: auto;
+  }
+
+  .nav-menu {
+    display: none;
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  .nav-menu.active {
+    display: block;
+  }
+
+  .nav-links {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .nav-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 15px;
+  }
+
+  .nav-link-btn {
+    width: 100%;
+    text-align: center;
+    padding: 12px;
+  }
+
+  .primary {
+    width: 100%;
+  }
+}

@@ -1,0 +1,201 @@
+/* ===========================
+   Dashboard Layout
+=========================== */
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+.dashboard{
+  display:flex;
+  min-height:100vh;
+  background:#eef3f8;
+}
+
+.dashboard-main{
+  flex:1;
+  margin-left:260px;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  transition:.3s;
+}
+
+/* ===========================
+   Right Side
+=========================== */
+
+.dashboard-content{
+  padding:30px;
+}
+
+/* ===========================
+   Card
+=========================== */
+
+.page-card{
+  width:100%;
+  background:#fff;
+  border-radius:18px;
+  padding:30px;
+  box-shadow:0 10px 30px rgba(0,0,0,.08);
+  animation:fade .3s;
+}
+
+@keyframes fade{
+  from{
+    opacity:0;
+    transform:translateY(15px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+.page-card h2{
+  color:#1e293b;
+  margin-bottom:25px;
+  border-bottom:1px solid #e5e7eb;
+  padding-bottom:15px;
+}
+
+/* ===========================
+   Profile
+=========================== */
+
+.profile-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:20px;
+}
+
+.profile-box{
+  background:#f8fafc;
+  padding:20px;
+  border-radius:12px;
+  border-left:5px solid #2563eb;
+}
+
+.profile-box h4{
+  color:#64748b;
+  margin-bottom:10px;
+}
+
+.profile-box p{
+  font-size:20px;
+  font-weight:bold;
+}
+
+/* ===========================
+   Search
+=========================== */
+
+.search-box{
+  width:100%;
+  max-width:350px;
+  padding:13px 15px;
+  border:1px solid #ddd;
+  border-radius:10px;
+  margin-bottom:20px;
+  outline:none;
+}
+
+.search-box:focus{
+  border-color:#2563eb;
+}
+
+/* ===========================
+   Table
+=========================== */
+
+.dashboard-table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+.dashboard-table th{
+  background:#2563eb;
+  color:white;
+  padding:15px;
+  text-align:left;
+}
+
+.dashboard-table td{
+  padding:15px;
+  border-bottom:1px solid #eee;
+}
+
+.dashboard-table tr:hover{
+  background:#f8fafc;
+}
+
+/* ===========================
+   Mobile
+=========================== */
+
+@media(max-width:992px){
+
+.dashboard-main{
+    margin-left:0;
+}
+
+.dashboard-content{
+    padding:20px;
+}
+
+}
+
+@media(max-width:768px){
+
+.dashboard{
+    display:block;
+}
+
+.dashboard-main{
+    margin-left:0;
+    width:100%;
+}
+
+.dashboard-content{
+    padding:15px;
+}
+
+.page-card{
+    padding:20px;
+}
+
+.page-card h2{
+    font-size:22px;
+}
+
+.dashboard-table{
+    display:block;
+    overflow-x:auto;
+    white-space:nowrap;
+}
+
+.search-box{
+    max-width:100%;
+}
+
+}
+
+@media(max-width:480px){
+
+.dashboard-content{
+    padding:12px;
+}
+
+.page-card{
+    padding:18px;
+    border-radius:14px;
+}
+
+.page-card h2{
+    font-size:20px;
+}
+
+}
