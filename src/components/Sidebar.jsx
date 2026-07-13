@@ -49,7 +49,7 @@ function Sidebar({ tab, setTab, onLogout, mobileOpen, setMobileOpen }) {
       <aside className={`sidebar ${mobileOpen ? "open" : ""}`}>
         <div className="sidebar-header">
           <h2>પંચશીલ સમાજ</h2>
-        
+          <span className="sidebar-tag">સભ્ય પોર્ટલ</span>
         </div>
 
         <nav className="sidebar-menu">

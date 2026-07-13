@@ -1,4 +1,12 @@
 /* ===== Sidebar ===== */
+:root {
+  --sidebar-bg: #0f172a;
+  --sidebar-hover: rgba(255, 255, 255, 0.08);
+  --sidebar-active: #2563eb;
+  --sidebar-active-glow: rgba(37, 99, 235, 0.35);
+  --sidebar-text: #94a3b8;
+  --sidebar-text-active: #ffffff;
+}
 
 .sidebar {
   position: fixed;
@@ -6,34 +14,58 @@
   left: 0;
   width: 260px;
   height: 100vh;
-  background: linear-gradient(180deg, #0f172a, #1e293b);
-  color: #fff;
+  background: var(--sidebar-bg);
+  color: #ffffff;
   display: flex;
   flex-direction: column;
   z-index: 1000;
-  transition: transform 0.3s ease;
-  box-shadow: 4px 0 18px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.15);
 }
 
 .sidebar-header {
-  padding: 24px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 30px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   text-align: center;
 }
 
 .sidebar-header h2 {
   margin: 0;
   font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, #ffffff, #94a3b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.sidebar-tag {
+  font-size: 11px;
+  color: var(--sidebar-text);
   font-weight: 700;
-  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-top: 6px;
+  display: block;
 }
 
 .sidebar-menu {
   flex: 1;
-  padding: 20px 12px;
+  padding: 24px 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.sidebar-menu::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
 }
 
 .sidebar-btn {
@@ -41,37 +73,49 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 18px;
+  padding: 12px 18px;
   border: none;
   border-radius: 12px;
   background: transparent;
-  color: #cbd5e1;
+  color: var(--sidebar-text);
   font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
+  outline: none;
 }
 
 .sidebar-btn span:first-child {
-  font-size: 22px;
-  width: 28px;
+  font-size: 20px;
+  width: 24px;
   text-align: center;
+  display: inline-block;
+  transition: transform 0.2s ease;
 }
 
 .sidebar-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  transform: translateX(5px);
+  background: var(--sidebar-hover);
+  color: var(--sidebar-text-active);
+  transform: translateX(4px);
+}
+
+.sidebar-btn:hover span:first-child {
+  transform: scale(1.15);
 }
 
 .sidebar-btn.active {
-  background: #2563eb;
-  color: #fff;
-  box-shadow: 0 6px 15px rgba(37, 99, 235, 0.35);
+  background: var(--sidebar-active);
+  color: var(--sidebar-text-active);
+  box-shadow: 0 4px 16px var(--sidebar-active-glow);
+}
+
+.sidebar-btn.active span:first-child {
+  transform: scale(1.1);
 }
 
 .sidebar-footer {
-  padding: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 20px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .logout-btn {
@@ -79,30 +123,34 @@
   padding: 14px;
   border: none;
   border-radius: 12px;
-  background: #ef4444;
-  color: #fff;
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: 0.25s;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .logout-btn:hover {
-  background: #dc2626;
+  background: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
 }
 
 /* ===== Overlay ===== */
-
 .sidebar-overlay {
   display: none;
 }
 
 /* ===== Mobile ===== */
-
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
-    width: 250px;
+    width: 260px;
   }
 
   .sidebar.open {
@@ -113,22 +161,8 @@
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.45);
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
     z-index: 999;
   }
-}
-
-/* ===== Scrollbar ===== */
-
-.sidebar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.sidebar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-}
-
-.sidebar::-webkit-scrollbar-track {
-  background: transparent;
 }

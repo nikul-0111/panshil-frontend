@@ -171,11 +171,16 @@ function DashboardPage({ onNavigate }) {
     onNavigate("/login");
   };
 
+  const handleTabChange = (newTab) => {
+    setTab(newTab);
+    setSearch("");
+  };
+
   return (
     <div className="dashboard">
       <Sidebar
         tab={tab}
-        setTab={setTab}
+        setTab={handleTabChange}
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
         onLogout={logout}
@@ -196,234 +201,399 @@ function DashboardPage({ onNavigate }) {
           />
 
           {tab === "profile" && (
-            <div className="page-card">
-              <h2>👤 મારી માહિતી</h2>
-
-              <p><strong>નામ :</strong> {profile?.name}</p>
-              <p><strong>મોબાઇલ નંબર :</strong> {profile?.mobile}</p>
-              <p><strong>ગામ :</strong> {profile?.village}</p>
-              <p><strong>ઉંમર :</strong> {profile?.age}</p>
-              <p><strong>ઈ-મેઈલ :</strong> {profile?.email || "ઉપલબ્ધ નથી"}</p>
+            <div className="page-card profile-card-view">
+              <div className="profile-header-decor"></div>
+              <div className="profile-container">
+                <div className="profile-sidebar">
+                  <div className="profile-avatar-large">
+                    {profile?.name ? profile.name.charAt(0) : "👤"}
+                  </div>
+                  <h3>{profile?.name}</h3>
+                  <span className="profile-badge">સક્રિય સભ્ય</span>
+                </div>
+                <div className="profile-details-grid">
+                  <div className="profile-detail-item">
+                    <span className="detail-label">👤 પૂરું નામ</span>
+                    <span className="detail-value">{profile?.name || "N/A"}</span>
+                  </div>
+                  <div className="profile-detail-item">
+                    <span className="detail-label">📞 મોબાઇલ નંબર</span>
+                    <span className="detail-value">{profile?.mobile || "N/A"}</span>
+                  </div>
+                  <div className="profile-detail-item">
+                    <span className="detail-label">🏘 ગામ</span>
+                    <span className="detail-value">{profile?.village || "N/A"}</span>
+                  </div>
+                  <div className="profile-detail-item">
+                    <span className="detail-label">🎂 ઉંમર</span>
+                    <span className="detail-value">{profile?.age ? `${profile.age} વર્ષ` : "N/A"}</span>
+                  </div>
+                  <div className="profile-detail-item full-width">
+                    <span className="detail-label">✉️ ઈ-મેઈલ સરનામું</span>
+                    <span className="detail-value">{profile?.email || "ઉપલબ્ધ નથી"}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
           {tab === "community" && (
-            <div className="page-card">
-              <h2>🌍 સમાજની માહિતી</h2>
+            <div className="page-card community-panel">
+              <div className="panel-header">
+                <h2>🌍 સમાજ માહિતી અને વિગતો</h2>
+                <p className="panel-subtitle">પંચશીલ સમાજના સંગઠન અને આંકડાકીય વિગતો</p>
+              </div>
 
-              <p><strong>કુલ સભ્યો :</strong> {summary.totalMembers}</p>
+              <div className="community-stats-showcase">
+                <div className="community-stat-box box-blue">
+                  <div className="stat-icon-wrapper blue">👥</div>
+                  <div className="stat-info">
+                    <h4>કુલ સભ્યો</h4>
+                    <h3>{summary.totalMembers || 0}</h3>
+                  </div>
+                </div>
+                <div className="community-stat-box box-green">
+                  <div className="stat-icon-wrapper green">🏘</div>
+                  <div className="stat-info">
+                    <h4>કુલ ગામો</h4>
+                    <h3>{summary.totalVillages || 0}</h3>
+                  </div>
+                </div>
+              </div>
 
-              <p><strong>કુલ ગામો :</strong> {summary.totalVillages}</p>
-
-              <ul>
-                {(summary.villages || []).map((v) => (
-                  <li key={v}>{v}</li>
-                ))}
-              </ul>
+              <div className="community-villages-section">
+                <h3>🏘 જોડાયેલા ગામોની યાદી</h3>
+                <div className="village-tags-container">
+                  {(summary.villages || []).map((v, index) => (
+                    <div key={v} className="village-badge-tag">
+                      <span className="tag-number">{index + 1}</span>
+                      <span className="tag-name">{v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
           {tab === "members" && (
-            <div className="page-card">
-              <h2>👥 સભ્યોની યાદી</h2>
+            <div className="page-card table-panel">
+              <div className="panel-header-flex">
+                <div className="panel-title-area">
+                  <h2>👥 સભ્યોની યાદી</h2>
+                  <p className="panel-subtitle">સમાજના તમામ સભ્યોની સંપર્ક માહિતી</p>
+                </div>
+                <div className="search-wrapper">
+                  <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <input
+                    className="search-box-premium"
+                    placeholder="નામ કે ગામથી શોધો..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+              </div>
 
-              <input
-                className="search-box"
-                placeholder="સભ્ય શોધો..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+              {members.length > 0 ? (
+                <>
+                  {/* Desktop Table View */}
+                  <div className="table-responsive-desktop">
+                    <table className="dashboard-table-premium">
+                      <thead>
+                        <tr>
+                          <th>સભ્યનું નામ</th>
+                          <th>મોબાઇલ નંબર</th>
+                          <th>ગામ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {members.map((m) => (
+                          <tr key={m._id}>
+                            <td className="member-name-cell">
+                              <div className="member-avatar-mini">
+                                {m.name ? m.name.charAt(0) : "👤"}
+                              </div>
+                              <span className="member-name-text">{m.name}</span>
+                            </td>
+                            <td className="phone-cell">
+                              <span className="phone-icon-span">📞</span> {m.mobile}
+                            </td>
+                            <td>
+                              <span className="village-badge-table">{m.village}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
 
-              <table className="dashboard-table">
-                <thead>
-                  <tr>
-                    <th>નામ</th>
-                    <th>મોબાઇલ નંબર</th>
-                    <th>ગામ</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {members.map((m) => (
-                    <tr key={m._id}>
-                      <td>{m.name}</td>
-                      <td>{m.mobile}</td>
-                      <td>{m.village}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                  {/* Mobile Card Grid View */}
+                  <div className="table-responsive-mobile">
+                    <div className="member-cards-grid">
+                      {members.map((m) => (
+                        <div key={m._id} className="member-mobile-card">
+                          <div className="member-mobile-card-header">
+                            <div className="member-avatar-mini">
+                              {m.name ? m.name.charAt(0) : "👤"}
+                            </div>
+                            <h4>{m.name}</h4>
+                          </div>
+                          <div className="member-mobile-card-body">
+                            <div className="info-row">
+                              <span>📞 ફોન:</span>
+                              <strong>{m.mobile}</strong>
+                            </div>
+                            <div className="info-row">
+                              <span>🏘 ગામ:</span>
+                              <span className="village-badge-table">{m.village}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="empty-search-state">
+                  <div className="empty-icon">🔍</div>
+                  <p>કોઈ સભ્યો મળ્યા નથી. કૃપા કરીને અન્ય નામ અથવા ગામ શોધો.</p>
+                </div>
+              )}
             </div>
           )}
 
           {tab === "villages" && (
-            <div className="page-card">
-              <h2>🏘 ગામોની યાદી</h2>
+            <div className="page-card table-panel">
+              <div className="panel-header-flex">
+                <div className="panel-title-area">
+                  <h2>🏘 ગામોની યાદી</h2>
+                  <p className="panel-subtitle">પંચશીલ સમાજના સભ્ય ગામો અને સભ્ય સંખ્યા</p>
+                </div>
+                <div className="search-wrapper">
+                  <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <input
+                    className="search-box-premium"
+                    placeholder="ગામનું નામ શોધો..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+              </div>
 
-              <input
-                className="search-box"
-                placeholder="ગામ શોધો..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-
-              <table className="dashboard-table">
-                <thead>
-                  <tr>
-                    <th>ગામ</th>
-                    <th>સભ્યોની સંખ્યા</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {villages.map((v) => (
-                    <tr key={v.name}>
-                      <td>{v.name}</td>
-                      <td>{v.members}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {villages.length > 0 ? (
+                <div className="villages-grid-premium">
+                  {villages.map((v) => {
+                    const maxMembers = Math.max(...villages.map(item => item.members), 1);
+                    const percentage = Math.min(100, Math.round((v.members / maxMembers) * 100));
+                    
+                    return (
+                      <div key={v.name} className="village-premium-card">
+                        <div className="village-card-header">
+                          <span className="village-icon-wrap">🏘</span>
+                          <h3>{v.name}</h3>
+                        </div>
+                        <div className="village-card-body">
+                          <div className="member-count-row">
+                            <span>સભ્યોની સંખ્યા:</span>
+                            <span className="member-count-badge">{v.members} સભ્યો</span>
+                          </div>
+                          <div className="village-progress-bar-container">
+                            <div className="village-progress-bar-fill" style={{ width: `${percentage}%` }}></div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="empty-search-state">
+                  <div className="empty-icon">🏘</div>
+                  <p>કોઈ ગામ મળ્યું નથી.</p>
+                </div>
+              )}
             </div>
           )}
 
           {tab === "payment" && (
-  <>
-    <div className="page-card payment-card">
+            <div className="payment-tab-container animate-fade-in">
+              <div className="payment-split-layout">
+                {/* Active Payment Panel */}
+                <div className="page-card payment-receipt-card">
+                  <div className="receipt-header">
+                    <span className="flower-icon">💐</span>
+                    <h2>સહાય ફંડ ચુકવણી</h2>
+                    <p className="receipt-desc">સદગતના પરિવારને મદદ માટે ચાલુ યોગદાન ફંડ</p>
+                  </div>
 
-      <h2>💐 સહાય ફંડ</h2>
+                  <div className="receipt-body">
+                    <div className="receipt-row">
+                      <span className="label">👤 મૃતક સભ્ય</span>
+                      <span className="value bold">{payment.deceasedName || "શ્રી રમેશભાઈ પરમાર"}</span>
+                    </div>
+                    <div className="receipt-row">
+                      <span className="label">🏘 વતન ગામ</span>
+                      <span className="value">{payment.deceasedVillage || "પાલનપુર"}</span>
+                    </div>
+                    <div className="receipt-row">
+                      <span className="label">📅 મૃત્યુ તારીખ</span>
+                      <span className="value">{payment.deathDate || "08/07/2026"}</span>
+                    </div>
+                    <div className="receipt-row">
+                      <span className="label">⏰ ચુકવણીની છેલ્લી તારીખ</span>
+                      <span className="value warning-text">{payment.dueDate || "15/07/2026"}</span>
+                    </div>
+                    
+                    <div className="receipt-divider"></div>
 
-      <div className="payment-details">
+                    <div className="receipt-row highlight">
+                      <span className="label">💰 તમારું યોગદાન</span>
+                      <span className="value price">₹{payment.contributionAmount || 50}</span>
+                    </div>
 
-        <div className="payment-row">
-          <span>મૃત સભ્ય</span>
-          <strong>{payment.deceasedName || "શ્રી રમેશભાઈ પરમાર"}</strong>
-        </div>
+                    <div className="receipt-divider"></div>
 
-        <div className="payment-row">
-          <span>ગામ</span>
-          <strong>{payment.deceasedVillage || "પાલનપુર"}</strong>
-        </div>
+                    <div className="receipt-progress-section">
+                      <div className="receipt-row small-margin">
+                        <span className="label">📊 કુલ નોંધાયેલા સભ્યો</span>
+                        <span className="value">{payment.totalMembers || 325}</span>
+                      </div>
+                      <div className="receipt-row small-margin">
+                        <span className="label">📈 કુલ એકત્રિત રકમ</span>
+                        <span className="value bold">₹{(payment.totalCollection !== undefined ? payment.totalCollection : 9750).toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
 
-        <div className="payment-row">
-          <span>મૃત્યુ તારીખ</span>
-          <strong>{payment.deathDate || "08/07/2026"}</strong>
-        </div>
+                    {payment.status === 'Paid' ? (
+                      <div className="payment-status-banner paid">
+                        <span className="status-icon">✓</span>
+                        <div className="status-text">
+                          <h4>ચુકવણી સફળ</h4>
+                          <p>તમારી સહાય ફંડ યોગદાન ચુકવણી સફળતાપૂર્વક થઈ ગઈ છે</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="payment-status-banner pending">
+                        <span className="status-icon">!</span>
+                        <div className="status-text">
+                          <h4>ચુકવણી બાકી</h4>
+                          <p>કૃપા કરીને છેલ્લી તારીખ પહેલાં ચુકવણી કરો</p>
+                        </div>
+                      </div>
+                    )}
 
-        <div className="payment-row">
-          <span>ચુકવણી કરવાની છેલ્લી તારીખ</span>
-          <strong>{payment.dueDate || "15/07/2026"}</strong>
-        </div>
+                    {payment.status === 'Paid' ? (
+                      <button className="premium-pay-btn paid" disabled>
+                        ✓ ચૂકવણી પૂર્ણ થઈ ગઈ છે
+                      </button>
+                    ) : (
+                      <button className="premium-pay-btn active" onClick={handlePayment}>
+                        ₹{payment.contributionAmount || 50} સુરક્ષિત ચૂકવો
+                      </button>
+                    )}
+                  </div>
+                </div>
 
-        <div className="payment-row">
-          <span>એક સભ્યનું યોગદાન</span>
-          <strong>₹{payment.contributionAmount || 50}</strong>
-        </div>
+                {/* Payment History Panel */}
+                <div className="page-card payment-history-card">
+                  <div className="panel-header">
+                    <h2>📜 અગાઉની ચુકવણીઓનો ઇતિહાસ</h2>
+                    <p className="panel-subtitle">તમારા દ્વારા કરવામાં આવેલ અગાઉની સહાય ફંડ વિગતો</p>
+                  </div>
 
-        <div className="payment-row">
-          <span>કુલ નોંધાયેલા સભ્યો</span>
-          <strong>{payment.totalMembers || 325}</strong>
-        </div>
+                  <div className="table-responsive-desktop">
+                    <table className="dashboard-table-premium">
+                      <thead>
+                        <tr>
+                          <th>મૃત સભ્ય</th>
+                          <th>ગામ</th>
+                          <th>મૃત્યુ તારીખ</th>
+                          <th>છેલ્લી તારીખ</th>
+                          <th>સ્થિતિ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {payment.history && payment.history.length > 0 ? (
+                          payment.history.map((h, index) => (
+                            <tr key={index}>
+                              <td><strong>{h.deceasedName}</strong></td>
+                              <td>{h.village}</td>
+                              <td>{h.deathDate}</td>
+                              <td>{h.dueDate}</td>
+                              <td>
+                                <span className="status-pill paid">ચૂકવેલ</span>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <>
+                            <tr>
+                              <td><strong>રમેશભાઈ પરમાર</strong></td>
+                              <td>પાલનપુર</td>
+                              <td>08/07/2026</td>
+                              <td>15/07/2026</td>
+                              <td>
+                                <span className="status-pill paid">ચૂકવેલ</span>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td><strong>કાનજીભાઈ પરમાર</strong></td>
+                              <td>ડીસા</td>
+                              <td>18/06/2026</td>
+                              <td>25/06/2026</td>
+                              <td>
+                                <span className="status-pill paid">ચૂકવેલ</span>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td><strong>મનુભાઈ પરમાર</strong></td>
+                              <td>થરાદ</td>
+                              <td>22/05/2026</td>
+                              <td>29/05/2026</td>
+                              <td>
+                                <span className="status-pill paid">ચૂકવેલ</span>
+                              </td>
+                            </tr>
+                          </>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
 
-        <div className="payment-row">
-          <span>કુલ વસૂલાત</span>
-          <strong>₹{(payment.totalCollection !== undefined ? payment.totalCollection : 9750).toLocaleString('en-IN')}</strong>
-        </div>
-
-        {payment.status === 'Paid' ? (
-          <div className="payment-status success">
-            ✅ તમારી ચુકવણી સફળતાપૂર્વક થઈ ગઈ છે
-          </div>
-        ) : (
-          <div className="payment-status pending">
-            ❌ તમારી ચુકવણી હજુ બાકી છે
-          </div>
-        )}
-
-        {payment.status === 'Paid' ? (
-          <button className="pay-btn paid-btn" disabled>
-            ✅ ચૂકવેલ
-          </button>
-        ) : (
-          <button className="pay-btn" onClick={handlePayment}>
-            ₹{payment.contributionAmount || 50} ચૂકવો
-          </button>
-        )}
-
-      </div>
-
-    </div>
-
-    {/* History */}
-
-    <div className="page-card history-card">
-
-      <h2>📜 અગાઉની સહાય ફંડ વિગતો</h2>
-
-      <table className="dashboard-table">
-
-        <thead>
-          <tr>
-            <th>મૃત સભ્ય</th>
-            <th>ગામ</th>
-            <th>મૃત્યુ તારીખ</th>
-            <th>છેલ્લી ચુકવણી તારીખ</th>
-            <th>તમારી સ્થિતિ</th>
-          </tr>
-        </thead>
-
-        <tbody>
-
-          {payment.history && payment.history.length > 0 ? (
-            payment.history.map((h, index) => (
-              <tr key={index}>
-                <td>{h.deceasedName}</td>
-                <td>{h.village}</td>
-                <td>{h.deathDate}</td>
-                <td>{h.dueDate}</td>
-                <td className="paid">✅ ચૂકવેલ</td>
-              </tr>
-            ))
-          ) : (
-            <>
-              <tr>
-                <td>રમેશભાઈ પરમાર</td>
-                <td>પાલનપુર</td>
-                <td>08/07/2026</td>
-                <td>15/07/2026</td>
-                <td className="paid">✅ ચૂકવેલ</td>
-              </tr>
-
-              <tr>
-                <td>કાનજીભાઈ પરમાર</td>
-                <td>ડીસા</td>
-                <td>18/06/2026</td>
-                <td>25/06/2026</td>
-                <td className="paid">✅ ચૂકવેલ</td>
-              </tr>
-
-              <tr>
-                <td>મનુભાઈ પરમાર</td>
-                <td>થરાદ</td>
-                <td>22/05/2026</td>
-                <td>29/05/2026</td>
-                <td className="paid">✅ ચૂકવેલ</td>
-              </tr>
-            </>
+                  {/* Mobile View for History */}
+                  <div className="table-responsive-mobile">
+                    <div className="history-mobile-list">
+                      {(payment.history && payment.history.length > 0 ? payment.history : [
+                        { deceasedName: "રમેશભાઈ પરમાર", village: "પાલનપુર", deathDate: "08/07/2026", dueDate: "15/07/2026" },
+                        { deceasedName: "કાનજીભાઈ પરમાર", village: "ડીસા", deathDate: "18/06/2026", dueDate: "25/06/2026" },
+                        { deceasedName: "મનુભાઈ પરમાર", village: "થરાદ", deathDate: "22/05/2026", dueDate: "29/05/2026" }
+                      ]).map((h, index) => (
+                        <div key={index} className="history-mobile-card">
+                          <div className="history-mobile-card-header">
+                            <h4>{h.deceasedName}</h4>
+                            <span className="status-pill paid">ચૂકવેલ</span>
+                          </div>
+                          <div className="history-mobile-card-body">
+                            <p><span>ગામ:</span> {h.village}</p>
+                            <p><span>મૃત્યુ તારીખ:</span> {h.deathDate}</p>
+                            <p><span>છેલ્લી તારીખ:</span> {h.dueDate}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
-
-        </tbody>
-
-      </table>
-
-    </div>
-
-  </>
-)}
         </div>
       </div>
     </div>
   );
 }
 
-export default DashboardPage;
+export default DashboardPage;
