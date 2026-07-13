@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import PageShell from '../components/PageShell';
+import { transliterateEnglishToGujarati } from '../utils/translator';
 
 function RegisterPage({ currentPage, onNavigate }) {
   const [formData, setFormData] = useState({
@@ -32,13 +33,16 @@ function RegisterPage({ currentPage, onNavigate }) {
     setLoading(true);
 
     try {
+      const translatedName = transliterateEnglishToGujarati(formData.name);
+      const translatedVillage = transliterateEnglishToGujarati(formData.village);
+
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: formData.name,
+          name: translatedName,
           mobile: formData.mobile,
-          village: formData.village,
+          village: translatedVillage,
           age: formData.age,
           email: formData.email,
           password: formData.password,
@@ -87,3 +91,4 @@ function RegisterPage({ currentPage, onNavigate }) {
 }
 
 export default RegisterPage;
+

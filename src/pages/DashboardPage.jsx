@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import DashboardCards from "../components/DashboardCards";
+import { transliterateEnglishToGujarati } from "../utils/translator";
 import "../styles/Dashboard.css";
 
 function DashboardPage({ onNavigate }) {
@@ -14,6 +15,13 @@ function DashboardPage({ onNavigate }) {
   const [search, setSearch] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Profile Editor States
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: "", mobile: "", village: "", age: "", email: "" });
+  const [profileError, setProfileError] = useState("");
+  const [profileSuccess, setProfileSuccess] = useState("");
+  const [profileLoading, setProfileLoading] = useState(false);
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -174,6 +182,77 @@ function DashboardPage({ onNavigate }) {
   const handleTabChange = (newTab) => {
     setTab(newTab);
     setSearch("");
+    setIsEditing(false); // Cancel edit mode when changing tab
+  };
+
+  // Edit Profile Actions
+  const handleStartEdit = () => {
+    setEditForm({
+      name: profile.name || "",
+      mobile: profile.mobile || "",
+      village: profile.village || "",
+      age: profile.age || "",
+      email: profile.email || "",
+    });
+    setProfileError("");
+    setProfileSuccess("");
+    setIsEditing(true);
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    setProfileError("");
+    setProfileSuccess("");
+    setProfileLoading(true);
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        onNavigate("/login");
+        return;
+      }
+
+      // Automatically translate English inputs to Gujarati upon profile update
+      const translatedName = transliterateEnglishToGujarati(editForm.name);
+      const translatedVillage = transliterateEnglishToGujarati(editForm.village);
+
+      const response = await fetch("/api/auth/update-profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: translatedName,
+          mobile: editForm.mobile,
+          village: translatedVillage,
+          age: editForm.age,
+          email: editForm.email,
+        }),
+      });
+
+      const resData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(resData.message || "પ્રોફાઇલ અપડેટ કરવામાં કોઈ ભૂલ આવી.");
+      }
+
+      setProfileSuccess("પ્રોફાઇલ સફળતાપૂર્વક અપડેટ કરવામાં આવી છે!");
+      setProfile(resData.data.user);
+      localStorage.setItem("user", JSON.stringify(resData.data.user));
+      
+      // Trigger update of lists/cards
+      setRefreshTrigger((prev) => prev + 1);
+
+      setTimeout(() => {
+        setIsEditing(false);
+        setProfileSuccess("");
+      }, 1500);
+    } catch (err) {
+      setProfileError(err.message || "કંઈક ભૂલ આવી.");
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
   return (
@@ -203,37 +282,112 @@ function DashboardPage({ onNavigate }) {
           {tab === "profile" && (
             <div className="page-card profile-card-view">
               <div className="profile-header-decor"></div>
-              <div className="profile-container">
-                <div className="profile-sidebar">
-                  <div className="profile-avatar-large">
-                    {profile?.name ? profile.name.charAt(0) : "👤"}
+              
+              {!isEditing ? (
+                <div className="profile-container">
+                  <div className="profile-sidebar">
+                    <div className="profile-avatar-large">
+                      {profile?.name ? profile.name.charAt(0) : "👤"}
+                    </div>
+                    <h3>{profile?.name}</h3>
+                    <span className="profile-badge">સક્રિય સભ્ય</span>
+                    <button className="edit-profile-btn" onClick={handleStartEdit}>
+                      ✏️ માહિતી સુધારો
+                    </button>
                   </div>
-                  <h3>{profile?.name}</h3>
-                  <span className="profile-badge">સક્રિય સભ્ય</span>
+                  <div className="profile-details-grid">
+                    <div className="profile-detail-item">
+                      <span className="detail-label">👤 પૂરું નામ</span>
+                      <span className="detail-value">{profile?.name || "N/A"}</span>
+                    </div>
+                    <div className="profile-detail-item">
+                      <span className="detail-label">📞 મોબાઇલ નંબર</span>
+                      <span className="detail-value">{profile?.mobile || "N/A"}</span>
+                    </div>
+                    <div className="profile-detail-item">
+                      <span className="detail-label">🏘 ગામ</span>
+                      <span className="detail-value">{profile?.village || "N/A"}</span>
+                    </div>
+                    <div className="profile-detail-item">
+                      <span className="detail-label">🎂 ઉંમર</span>
+                      <span className="detail-value">{profile?.age ? `${profile.age} વર્ષ` : "N/A"}</span>
+                    </div>
+                    <div className="profile-detail-item full-width">
+                      <span className="detail-label">✉️ ઈ-મેઈલ સરનામું</span>
+                      <span className="detail-value">{profile?.email || "ઉપલબ્ધ નથી"}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="profile-details-grid">
-                  <div className="profile-detail-item">
-                    <span className="detail-label">👤 પૂરું નામ</span>
-                    <span className="detail-value">{profile?.name || "N/A"}</span>
+              ) : (
+                <form onSubmit={handleSaveProfile} className="profile-container">
+                  <div className="profile-sidebar">
+                    <div className="profile-avatar-large">
+                      {profile?.name ? profile.name.charAt(0) : "👤"}
+                    </div>
+                    <h3>માહિતી સુધારો</h3>
+                    <div className="profile-edit-actions">
+                      <button type="submit" className="save-profile-btn" disabled={profileLoading}>
+                        {profileLoading ? "સાચવી રહ્યું..." : "💾 સાચવો"}
+                      </button>
+                      <button type="button" className="cancel-profile-btn" onClick={() => setIsEditing(false)}>
+                        ❌ રદ કરો
+                      </button>
+                    </div>
                   </div>
-                  <div className="profile-detail-item">
-                    <span className="detail-label">📞 મોબાઇલ નંબર</span>
-                    <span className="detail-value">{profile?.mobile || "N/A"}</span>
+                  <div className="profile-details-grid">
+                    {profileError && <div className="profile-alert error">{profileError}</div>}
+                    {profileSuccess && <div className="profile-alert success">{profileSuccess}</div>}
+                    
+                    <div className="profile-detail-item edit-mode">
+                      <span className="detail-label">👤 પૂરું નામ *</span>
+                      <input
+                        className="profile-edit-input"
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="profile-detail-item edit-mode">
+                      <span className="detail-label">📞 મોબાઇલ નંબર *</span>
+                      <input
+                        className="profile-edit-input"
+                        value={editForm.mobile}
+                        onChange={(e) => setEditForm({ ...editForm, mobile: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="profile-detail-item edit-mode">
+                      <span className="detail-label">🏘 ગામ *</span>
+                      <input
+                        className="profile-edit-input"
+                        value={editForm.village}
+                        onChange={(e) => setEditForm({ ...editForm, village: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="profile-detail-item edit-mode">
+                      <span className="detail-label">🎂 ઉંમર *</span>
+                      <input
+                        className="profile-edit-input"
+                        type="number"
+                        value={editForm.age}
+                        onChange={(e) => setEditForm({ ...editForm, age: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="profile-detail-item full-width edit-mode">
+                      <span className="detail-label">✉️ ઈ-મેઈલ સરનામું</span>
+                      <input
+                        className="profile-edit-input"
+                        type="email"
+                        value={editForm.email}
+                        onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                        placeholder="ઈમેઇલ (વૈકલ્પિક)"
+                      />
+                    </div>
                   </div>
-                  <div className="profile-detail-item">
-                    <span className="detail-label">🏘 ગામ</span>
-                    <span className="detail-value">{profile?.village || "N/A"}</span>
-                  </div>
-                  <div className="profile-detail-item">
-                    <span className="detail-label">🎂 ઉંમર</span>
-                    <span className="detail-value">{profile?.age ? `${profile.age} વર્ષ` : "N/A"}</span>
-                  </div>
-                  <div className="profile-detail-item full-width">
-                    <span className="detail-label">✉️ ઈ-મેઈલ સરનામું</span>
-                    <span className="detail-value">{profile?.email || "ઉપલબ્ધ નથી"}</span>
-                  </div>
-                </div>
-              </div>
+                </form>
+              )}
             </div>
           )}
 
