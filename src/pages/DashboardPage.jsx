@@ -7,7 +7,7 @@ import api from "../services/api";
 import "../styles/Dashboard.css";
 
 function DashboardPage({ onNavigate }) {
-  const [tab, setTab] = useState("profile");
+  const [tab, setTab] = useState("community");
   const [profile, setProfile] = useState({});
   const [summary, setSummary] = useState({});
   const [members, setMembers] = useState([]);
@@ -299,11 +299,6 @@ function DashboardPage({ onNavigate }) {
         />
 
         <div className="dashboard-content">
-          <DashboardCards
-            profile={profile}
-            summary={summary}
-            payment={payment}
-          />
 
           {tab === "member_approvals" && (
             <div className="page-card pending-users-panel">
@@ -470,41 +465,31 @@ function DashboardPage({ onNavigate }) {
           )}
 
           {tab === "community" && (
-            <div className="page-card community-panel">
-              <div className="panel-header">
-                <h2>🌍 સમાજ માહિતી અને વિગતો</h2>
-                <p className="panel-subtitle">પંચશીલ સમાજના સંગઠન અને આંકડાકીય વિગતો</p>
-              </div>
+            <>
+              <DashboardCards
+                profile={profile}
+                summary={summary}
+                payment={payment}
+              />
+              <div className="page-card community-panel">
+                <div className="panel-header">
+                  <h2>🌍 સમાજ માહિતી અને વિગતો</h2>
+                  <p className="panel-subtitle">પંચશીલ સમાજના સંગઠન અને આંકડાકીય વિગતો</p>
+                </div>
 
-              <div className="community-stats-showcase">
-                <div className="community-stat-box box-blue">
-                  <div className="stat-icon-wrapper blue">👥</div>
-                  <div className="stat-info">
-                    <h4>કુલ સભ્યો</h4>
-                    <h3>{summary.totalMembers || 0}</h3>
+                <div className="community-villages-section">
+                  <h3>🏘 જોડાયેલા ગામોની યાદી</h3>
+                  <div className="village-tags-container">
+                    {(summary.villages || []).map((v, index) => (
+                      <div key={v} className="village-badge-tag">
+                        <span className="tag-number">{index + 1}</span>
+                        <span className="tag-name">{v}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <div className="community-stat-box box-green">
-                  <div className="stat-icon-wrapper green">🏘</div>
-                  <div className="stat-info">
-                    <h4>કુલ ગામો</h4>
-                    <h3>{summary.totalVillages || 0}</h3>
-                  </div>
-                </div>
               </div>
-
-              <div className="community-villages-section">
-                <h3>🏘 જોડાયેલા ગામોની યાદી</h3>
-                <div className="village-tags-container">
-                  {(summary.villages || []).map((v, index) => (
-                    <div key={v} className="village-badge-tag">
-                      <span className="tag-number">{index + 1}</span>
-                      <span className="tag-name">{v}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            </>
           )}
 
           {tab === "members" && (

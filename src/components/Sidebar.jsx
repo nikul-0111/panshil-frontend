@@ -20,6 +20,11 @@ function Sidebar({ tab, setTab, onLogout, mobileOpen, setMobileOpen }) {
           label: "મારી પ્રોફાઇલ",
         },
         {
+          id: "community",
+          icon: "🌍",
+          label: "સમાજ માહિતી",
+        },
+        {
           id: "member_approvals",
           icon: "🔔",
           label: "સભ્ય મંજૂરી",

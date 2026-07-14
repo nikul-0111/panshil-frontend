@@ -4,7 +4,7 @@ import './DashboardCards.css';
 const DashboardCards = ({ profile, summary = {}, payment = {} }) => {
   const totalMembers = summary.totalMembers !== undefined ? summary.totalMembers : 0;
   const totalVillages = summary.totalVillages !== undefined ? summary.totalVillages : 0;
-  
+
   const activeFundName = payment.deceasedName || "શ્રી રમેશભાઈ પરમાર";
   const isPaid = payment.status === 'Paid';
 
