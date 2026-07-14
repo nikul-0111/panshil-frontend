@@ -2,7 +2,7 @@ import { useState } from "react";
 import PageShell from "../components/PageShell";
 import api from "../services/api";
 
-function LoginPage({ currentPage, onNavigate }) {
+function AdminLoginPage({ currentPage, onNavigate }) {
   const [formData, setFormData] = useState({
     mobile: "",
     password: "",
@@ -27,24 +27,14 @@ function LoginPage({ currentPage, onNavigate }) {
     setMessage("");
 
     try {
-      const response = await api.post("/api/auth/login", formData);
+      const response = await api.post("/api/admin/login", formData);
       const data = response.data;
 
-      console.log("Login Response:", data);
+      console.log("Admin Login Response:", data);
 
       if (!data.success) {
         throw new Error(data.message || "લોગિન નિષ્ફળ ગયું");
       }
-
-      // Backend response:
-      // {
-      //   success:true,
-      //   message:"",
-      //   data:{
-      //      user:{},
-      //      token:"..."
-      //   }
-      // }
 
       const token = data?.data?.token;
       const user = data?.data?.user;
@@ -53,14 +43,14 @@ function LoginPage({ currentPage, onNavigate }) {
         throw new Error("Token not found in response.");
       }
 
-      // Save login data
+      // Save admin login data
       localStorage.setItem("token", token);
 
       if (user) {
         localStorage.setItem("user", JSON.stringify(user));
       }
 
-      setMessage("લોગિન સફળ!");
+      setMessage("એડમિન લોગિન સફળ!");
 
       // Redirect
       onNavigate("/dashboard");
@@ -76,8 +66,8 @@ function LoginPage({ currentPage, onNavigate }) {
     <PageShell
       currentPage={currentPage}
       onNavigate={onNavigate}
-      title="લોગિન"
-      description="તમારા એકાઉન્ટમાં પ્રવેશ કરવા માટે નીચે માહિતી ભરો."
+      title="એડમિન લોગિન"
+      description="એડમિન પોર્ટલમાં પ્રવેશ કરવા માટે નીચે માહિતી ભરો."
     >
       <form className="form-card" onSubmit={handleSubmit}>
         <label>મોબાઇલ નંબર</label>
@@ -115,11 +105,11 @@ function LoginPage({ currentPage, onNavigate }) {
         )}
 
         <button type="submit" disabled={loading}>
-          {loading ? "પ્રતિક્ષા..." : "લોગિન"}
+          {loading ? "પ્રતિક્ષા..." : "એડમિન લોગિન"}
         </button>
       </form>
     </PageShell>
   );
 }
 
-export default LoginPage;
+export default AdminLoginPage;

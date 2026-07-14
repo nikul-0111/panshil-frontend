@@ -1,0 +1,279 @@
+/* ====================================
+   FOOTER - PREMIUM DARK THEME
+   ==================================== */
+
+.footer {
+    background: linear-gradient(135deg, #0b0f19 0%, #111827 100%);
+    color: #cbd5e1;
+    margin-top: 70px;
+    font-family: "Poppins", sans-serif;
+    border-top: 4px solid #0ea5e9;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtly decorate footer with glassmorphic ambient glow */
+.footer::before {
+    content: "";
+    position: absolute;
+    top: -150px;
+    left: 25%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, rgba(14, 165, 233, 0) 70%);
+    pointer-events: none;
+}
+
+/* ====================================
+   CONTAINER
+   ==================================== */
+
+.footer-container {
+    max-width: 1300px;
+    margin: auto;
+    padding: 70px 30px 40px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 40px;
+    position: relative;
+    z-index: 1;
+}
+
+/* ====================================
+   TITLES
+   ==================================== */
+
+.footer-section h2,
+.footer-section h3 {
+    color: #ffffff;
+    margin-bottom: 25px;
+    position: relative;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.footer-section h2 {
+    font-size: 28px;
+    background: linear-gradient(to right, #ffffff, #38bdf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.footer-section h3 {
+    font-size: 20px;
+}
+
+.footer-section h2::after,
+.footer-section h3::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -8px;
+    width: 45px;
+    height: 3px;
+    background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+    border-radius: 20px;
+}
+
+/* ====================================
+   TEXT
+   ==================================== */
+
+.footer-section p {
+    color: #94a3b8;
+    font-size: 15px;
+    line-height: 1.8;
+    margin-top: 12px;
+}
+
+/* ====================================
+   LINKS
+   ==================================== */
+
+.footer-section ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 15px;
+}
+
+.footer-section ul li {
+    margin-bottom: 15px;
+}
+
+.footer-section ul li button,
+.footer-section ul li a {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: none;
+    color: #94a3b8;
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+}
+
+.footer-section ul li button::after,
+.footer-section ul li a::after {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: -4px;
+    left: 0;
+    background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+    transition: width 0.3s ease;
+}
+
+.footer-section ul li button:hover,
+.footer-section ul li a:hover {
+    color: #38bdf8;
+    transform: translateX(6px);
+}
+
+.footer-section ul li button:hover::after,
+.footer-section ul li a:hover::after {
+    width: 100%;
+}
+
+/* Special styling for Admin Links section/badge */
+.admin-badge {
+    background: rgba(14, 165, 233, 0.15);
+    border: 1px solid rgba(14, 165, 233, 0.3);
+    color: #38bdf8;
+    padding: 2px 8px;
+    font-size: 11px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* ====================================
+   CONTACT INFO
+   ==================================== */
+
+.footer-section p svg {
+    color: #0ea5e9;
+    margin-right: 12px;
+    font-size: 16px;
+    vertical-align: middle;
+}
+
+/* ====================================
+   SOCIAL ICONS
+   ==================================== */
+
+.social-icons {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.social-icons a {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    color: #38bdf8;
+    text-decoration: none;
+    font-size: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.social-icons a:hover {
+    background: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%);
+    color: #0b0f19;
+    transform: translateY(-6px) scale(1.05);
+    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.4);
+    border-color: transparent;
+}
+
+/* ====================================
+   FOOTER BOTTOM
+   ==================================== */
+
+.footer-bottom {
+    text-align: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 25px 20px;
+    color: #64748b;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    position: relative;
+    z-index: 1;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* ====================================
+   MEDIA QUERIES (RESPONSIVE)
+   ==================================== */
+
+@media (max-width: 992px) {
+    .footer-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 35px;
+        padding: 55px 25px 35px;
+    }
+}
+
+@media (max-width: 768px) {
+    .footer {
+        text-align: center;
+    }
+
+    .footer-container {
+        grid-template-columns: 1fr;
+        padding: 45px 20px 30px;
+    }
+
+    .footer-section h2::after,
+    .footer-section h3::after {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .footer-section ul li button:hover,
+    .footer-section ul li a:hover {
+        transform: none;
+    }
+
+    .social-icons {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .footer-container {
+        padding: 40px 15px 25px;
+    }
+
+    .footer-section h2 {
+        font-size: 24px;
+    }
+
+    .footer-section h3 {
+        font-size: 18px;
+    }
+
+    .footer-section p {
+        font-size: 14px;
+    }
+
+    .social-icons a {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+}

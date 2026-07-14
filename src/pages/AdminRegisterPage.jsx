@@ -3,7 +3,7 @@ import PageShell from '../components/PageShell';
 import { transliterateEnglishToGujarati } from '../utils/translator';
 import api from '../services/api';
 
-function RegisterPage({ currentPage, onNavigate }) {
+function AdminRegisterPage({ currentPage, onNavigate }) {
   const [formData, setFormData] = useState({
     name: '',
     mobile: '',
@@ -37,7 +37,7 @@ function RegisterPage({ currentPage, onNavigate }) {
       const translatedName = transliterateEnglishToGujarati(formData.name);
       const translatedVillage = transliterateEnglishToGujarati(formData.village);
 
-      const response = await api.post('/api/auth/register', {
+      const response = await api.post('/api/admin/register', {
         name: translatedName,
         mobile: formData.mobile,
         village: translatedVillage,
@@ -52,9 +52,10 @@ function RegisterPage({ currentPage, onNavigate }) {
         throw new Error(data.message || 'રજિસ્ટર નિષ્ફળ ગયું');
       }
 
-      localStorage.setItem('token', data.token || '');
-      setMessage(data.message || 'રજિસ્ટર સફળ');
-      onNavigate('/login');
+      setMessage(data.message || 'એડમિન રજીસ્ટ્રેશન સફળ!');
+      setTimeout(() => {
+        onNavigate('/admin/login');
+      }, 1500);
     } catch (err) {
       setError(err.message || 'કંઈ ત્રુટિ આવી');
     } finally {
@@ -63,7 +64,7 @@ function RegisterPage({ currentPage, onNavigate }) {
   };
 
   return (
-    <PageShell currentPage={currentPage} onNavigate={onNavigate} title="રજિસ્ટર" description="સદસ્ય બનવા માટે નીચેની માહિતી ભરો.">
+    <PageShell currentPage={currentPage} onNavigate={onNavigate} title="એડમિન રજીસ્ટ્રેશન" description="એડમિન બનવા માટે નીચેની માહિતી ભરો.">
       <form className="form-card" onSubmit={handleSubmit}>
         <label>નામ *</label>
         <input name="name" value={formData.name} onChange={handleChange} placeholder="નામ" required />
@@ -81,11 +82,10 @@ function RegisterPage({ currentPage, onNavigate }) {
         <input name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} placeholder="પાસવર્ડ પુષ્ટિ" required />
         {message && <p style={{ color: 'green' }}>{message}</p>}
         {error && <p style={{ color: 'crimson' }}>{error}</p>}
-        <button type="submit" disabled={loading}>{loading ? 'પ્રતિક્ષા...' : 'રજિસ્ટર'}</button>
+        <button type="submit" disabled={loading}>{loading ? 'પ્રતિક્ષા...' : 'એડમિન રજીસ્ટર'}</button>
       </form>
     </PageShell>
   );
 }
 
-export default RegisterPage;
-
+export default AdminRegisterPage;

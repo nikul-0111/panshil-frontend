@@ -6,7 +6,10 @@ import HowItWorksPage from './pages/HowItWorksPage'
 import ContactPage from './pages/ContactPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import AdminLoginPage from './pages/AdminLoginPage'
+import AdminRegisterPage from './pages/AdminRegisterPage'
 import DashboardPage from './pages/DashboardPage'
+import Footer from "./components/Footer";
 
 function App() {
   const [currentPage, setCurrentPage] = useState(() => window.location.pathname)
@@ -19,7 +22,7 @@ function App() {
 
   useEffect(() => {
     const token = localStorage.getItem('token')
-    if (token && window.location.pathname === '/login') {
+    if (token && (window.location.pathname === '/login' || window.location.pathname === '/admin/login')) {
       setCurrentPage('/dashboard')
       window.history.replaceState({}, '', '/dashboard')
     }
@@ -42,6 +45,10 @@ function App() {
         return <LoginPage currentPage={currentPage} onNavigate={navigate} />
       case '/register':
         return <RegisterPage currentPage={currentPage} onNavigate={navigate} />
+      case '/admin/login':
+        return <AdminLoginPage currentPage={currentPage} onNavigate={navigate} />
+      case '/admin/register':
+        return <AdminRegisterPage currentPage={currentPage} onNavigate={navigate} />
       case '/dashboard':
         return <DashboardPage currentPage={currentPage} onNavigate={navigate} />
       default:
@@ -49,7 +56,13 @@ function App() {
     }
   }
 
-  return renderPage()
+return (
+  <>
+    {renderPage()}
+
+    {currentPage !== "/dashboard" && <Footer onNavigate={navigate} />}
+  </>
+);
 }
 
 export default App

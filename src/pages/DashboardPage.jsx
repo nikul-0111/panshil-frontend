@@ -3,6 +3,7 @@ import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import DashboardCards from "../components/DashboardCards";
 import { transliterateEnglishToGujarati } from "../utils/translator";
+import api from "../services/api";
 import "../styles/Dashboard.css";
 
 function DashboardPage({ onNavigate }) {
@@ -12,6 +13,8 @@ function DashboardPage({ onNavigate }) {
   const [members, setMembers] = useState([]);
   const [villages, setVillages] = useState([]);
   const [payment, setPayment] = useState({});
+  const [pendingUsers, setPendingUsers] = useState([]);
+  const [selectedMember, setSelectedMember] = useState(null);
   const [search, setSearch] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -47,15 +50,13 @@ function DashboardPage({ onNavigate }) {
       }
 
       // 1. Create order on the backend
-      const orderRes = await fetch("/api/community/payment/order", {
-        method: "POST",
+      const orderRes = await api.post("/api/community/payment/order", {}, {
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
 
-      const orderData = await orderRes.json();
+      const orderData = orderRes.data;
       if (!orderData.success) {
         alert("ઓર્ડર બનાવવામાં નિષ્ફળતા: " + (orderData.message || "અજ્ઞાત ભૂલ"));
         return;
@@ -81,20 +82,17 @@ function DashboardPage({ onNavigate }) {
         handler: async function (response) {
           try {
             // 4. Verify Payment on Backend
-            const verifyRes = await fetch("/api/community/payment/verify", {
-              method: "POST",
+            const verifyRes = await api.post("/api/community/payment/verify", {
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+            }, {
               headers: {
-                "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,
               },
-              body: JSON.stringify({
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
             });
 
-            const verifyData = await verifyRes.json();
+            const verifyData = verifyRes.data;
             if (verifyData.success) {
               alert("ચુકવણી સફળતાપૂર્વક પૂર્ણ થઈ ગઈ છે!");
               setRefreshTrigger((prev) => prev + 1);
@@ -147,31 +145,36 @@ function DashboardPage({ onNavigate }) {
       Authorization: `Bearer ${token}`,
     };
 
-    fetch("/api/community/summary", { headers })
-      .then((res) => res.json())
-      .then((data) => setSummary(data.data || {}))
+    api.get("/api/community/summary", { headers })
+      .then((res) => setSummary(res.data.data || {}))
       .catch(console.error);
 
-    fetch(
+    api.get(
       "/api/community/members?search=" + encodeURIComponent(search),
       { headers }
     )
-      .then((res) => res.json())
-      .then((data) => setMembers(data.data || []))
+      .then((res) => setMembers(res.data.data || []))
       .catch(console.error);
 
-    fetch(
+    api.get(
       "/api/community/villages?search=" + encodeURIComponent(search),
       { headers }
     )
-      .then((res) => res.json())
-      .then((data) => setVillages(data.data || []))
+      .then((res) => setVillages(res.data.data || []))
       .catch(console.error);
 
-    fetch("/api/community/payment", { headers })
-      .then((res) => res.json())
-      .then((data) => setPayment(data.data || {}))
+    api.get("/api/community/payment", { headers })
+      .then((res) => setPayment(res.data.data || {}))
       .catch(console.error);
+
+    const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+    if (parsedUser && parsedUser.role === 'admin') {
+      api.get("/api/admin/users/pending", { headers })
+        .then((res) => setPendingUsers(res.data.data || []))
+        .catch(console.error);
+    } else {
+      setPendingUsers([]);
+    }
   }, [search, refreshTrigger]);
 
   const logout = () => {
@@ -216,24 +219,21 @@ function DashboardPage({ onNavigate }) {
       const translatedName = transliterateEnglishToGujarati(editForm.name);
       const translatedVillage = transliterateEnglishToGujarati(editForm.village);
 
-      const response = await fetch("/api/auth/update-profile", {
-        method: "PUT",
+      const response = await api.put("/api/auth/update-profile", {
+        name: translatedName,
+        mobile: editForm.mobile,
+        village: translatedVillage,
+        age: editForm.age,
+        email: editForm.email,
+      }, {
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          name: translatedName,
-          mobile: editForm.mobile,
-          village: translatedVillage,
-          age: editForm.age,
-          email: editForm.email,
-        }),
       });
 
-      const resData = await response.json();
+      const resData = response.data;
 
-      if (!response.ok) {
+      if (!resData.success) {
         throw new Error(resData.message || "પ્રોફાઇલ અપડેટ કરવામાં કોઈ ભૂલ આવી.");
       }
 
@@ -252,6 +252,32 @@ function DashboardPage({ onNavigate }) {
       setProfileError(err.message || "કંઈક ભૂલ આવી.");
     } finally {
       setProfileLoading(false);
+    }
+  };
+
+  const handleUserApproval = async (userId, newStatus) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await api.put(`/api/admin/users/${userId}/status`, {
+        status: newStatus,
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const resData = response.data;
+      if (!resData.success) {
+        throw new Error(resData.message || "અરજી પ્રોસેસ કરવામાં કોઈ ભૂલ આવી.");
+      }
+
+      alert(resData.message || "ક્રિયા સફળ રહી!");
+      setRefreshTrigger((prev) => prev + 1);
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "કંઈક ભૂલ આવી.");
     }
   };
 
@@ -278,6 +304,58 @@ function DashboardPage({ onNavigate }) {
             summary={summary}
             payment={payment}
           />
+
+          {tab === "member_approvals" && (
+            <div className="page-card pending-users-panel">
+              <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '15px', marginBottom: '20px' }}>
+                <h2 style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
+                  🔔 નવા રજીસ્ટ્રેશન વિનંતીઓ 
+                  {pendingUsers.length > 0 && <span className="pending-badge">{pendingUsers.length}</span>}
+                </h2>
+                <p className="panel-subtitle" style={{ margin: '5px 0 0 0' }}>કૃપા કરીને નીચેના સભ્યોની માહિતી ચકાસો અને મંજૂરી આપો.</p>
+              </div>
+
+              {pendingUsers.length > 0 ? (
+                <div className="pending-users-list">
+                  {pendingUsers.map((user) => (
+                    <div key={user._id} className="pending-user-card">
+                      <div className="pending-user-info">
+                        <div className="pending-user-avatar">
+                          {user.name ? user.name.charAt(0) : "👤"}
+                        </div>
+                        <div className="pending-user-details">
+                          <h4>{user.name}</h4>
+                          <p>📞 <strong>મોબાઇલ:</strong> {user.mobile}</p>
+                          <p>🏘 <strong>ગામ:</strong> {user.village}</p>
+                          <p>🎂 <strong>ઉંમર:</strong> {user.age} વર્ષ</p>
+                          {user.email && <p>✉️ <strong>ઈમેઈલ:</strong> {user.email}</p>}
+                        </div>
+                      </div>
+                      <div className="pending-user-actions">
+                        <button 
+                          className="approve-btn-premium" 
+                          onClick={() => handleUserApproval(user._id, 'approved')}
+                        >
+                          ✅ મંજૂર કરો
+                        </button>
+                        <button 
+                          className="reject-btn-premium" 
+                          onClick={() => handleUserApproval(user._id, 'rejected')}
+                        >
+                          ❌ નામંજૂર
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-search-state" style={{ padding: "40px 20px" }}>
+                  <div className="empty-icon">🔔</div>
+                  <p>હાલમાં કોઈ નવી રજીસ્ટ્રેશન વિનંતીઓ બાકી નથી.</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {tab === "profile" && (
             <div className="page-card profile-card-view">
