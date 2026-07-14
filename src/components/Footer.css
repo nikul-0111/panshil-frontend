@@ -54,10 +54,12 @@
 }
 
 .footer-section h2 {
-    font-size: 28px;
-    background: linear-gradient(to right, #ffffff, #38bdf8);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+   background: linear-gradient(90deg, #ff6600, #ffcc00);
+
+background-clip: text;
+-webkit-background-clip: text;
+
+-webkit-text-fill-color: transparent;
 }
 
 .footer-section h3 {

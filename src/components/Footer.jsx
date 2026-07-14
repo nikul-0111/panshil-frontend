@@ -43,11 +43,7 @@ function Footer({ onNavigate }) {
                 ℹ️ અમારા વિશે
               </a>
             </li>
-            <li>
-              <a href="/dashboard" onClick={(e) => handleLinkClick(e, "/dashboard")}>
-                📊 ડેશબોર્ડ
-              </a>
-            </li>
+            
             <li>
               <a href="/contact" onClick={(e) => handleLinkClick(e, "/contact")}>
                 📞 સંપર્ક કરો
