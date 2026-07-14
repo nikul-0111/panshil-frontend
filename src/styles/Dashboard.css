@@ -776,25 +776,75 @@
     padding: 20px;
   }
 
+  .profile-header-decor {
+    height: 90px;
+  }
+
   .profile-container {
     flex-direction: column;
     align-items: center;
-    margin-top: -50px;
-    padding: 0 20px 20px 20px;
+    margin-top: -45px;
+    padding: 0 16px 20px;
     gap: 20px;
   }
 
   .profile-sidebar {
     width: 100%;
+    text-align: center;
+  }
+
+  .profile-avatar-large {
+    width: 90px;
+    height: 90px;
+    font-size: 34px;
+    border-width: 3px;
+  }
+
+  .profile-sidebar h3 {
+    font-size: 18px;
+    margin: 12px 0 6px;
+  }
+
+  .profile-badge {
+    font-size: 12px;
+    padding: 5px 14px;
   }
 
   .profile-details-grid {
     width: 100%;
     grid-template-columns: 1fr;
-    padding-top: 10px;
+    gap: 14px;
+    padding-top: 0;
+  }
+
+  .profile-detail-item {
+    padding: 14px 16px;
   }
 
   .profile-detail-item.full-width {
+    grid-column: span 1;
+  }
+
+  .detail-label {
+    font-size: 11px;
+  }
+
+  .detail-value {
+    font-size: 15px;
+    word-break: break-word;
+  }
+
+  .edit-profile-btn,
+  .save-profile-btn,
+  .cancel-profile-btn {
+    width: 100%;
+  }
+
+  .profile-edit-actions {
+    width: 100%;
+  }
+
+  .profile-alert {
     grid-column: span 1;
   }
 
