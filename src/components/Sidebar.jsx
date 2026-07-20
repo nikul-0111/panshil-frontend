@@ -57,21 +57,11 @@ function Sidebar({ tab, setTab, onLogout, mobileOpen, setMobileOpen }) {
           label: "સમાજ માહિતી",
         },
         {
-          id: "members",
-          icon: "👥",
-          label: "સભ્યો",
-        },
-        {
-          id: "villages",
-          icon: "🏘",
-          label: "ગામો",
-        },
-        {
           id: "payment",
           icon: "💳",
           label: "ચુકવણી",
         },
-      ];
+      ]; // Members and Villages have been removed here for standard users
 
   const handleClick = (id) => {
     setTab(id);
