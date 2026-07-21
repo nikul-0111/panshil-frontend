@@ -56,7 +56,7 @@ function RegisterPage({ currentPage, onNavigate }) {
       setMessage(data.message || 'રજિસ્ટર સફળ');
       onNavigate('/login');
     } catch (err) {
-      setError(err.message || 'કંઈ ત્રુટિ આવી');
+      setError(err.response?.data?.message || err.message || 'કંઈ ત્રુટિ આવી');
     } finally {
       setLoading(false);
     }
@@ -68,11 +68,11 @@ function RegisterPage({ currentPage, onNavigate }) {
         <label>નામ *</label>
         <input name="name" value={formData.name} onChange={handleChange} placeholder="નામ" required />
         <label>મોબાઇલ *</label>
-        <input name="mobile" value={formData.mobile} onChange={handleChange} placeholder="મોબાઇલ નંબર" required />
+        <input name="mobile" type="tel" value={formData.mobile} onChange={handleChange} placeholder="મોબાઇલ નંબર" required />
         <label>ગામ *</label>
         <input name="village" value={formData.village} onChange={handleChange} placeholder="ગામ" required />
         <label>ઉંમર *</label>
-        <input name="age" value={formData.age} onChange={handleChange} placeholder="ઉંમર" required />
+        <input name="age" type="number" min="1" max="120" value={formData.age} onChange={handleChange} placeholder="ઉંમર" required />
         <label>ઈમેઇલ (વૈકલ્પિક)</label>
         <input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="ઈમેઇલ" />
         <label>પાસવર્ડ *</label>

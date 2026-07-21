@@ -154,6 +154,14 @@ function DashboardPage({ onNavigate }) {
       };
 
       const rzp = new window.Razorpay(options);
+      
+      // Handle Payment Failure
+      rzp.on('payment.failed', function (response) {
+        console.error("Payment Failed:", response.error);
+        alert(`ચુકવણી નિષ્ફળ ગઈ! (Payment Failed)\nકારણ: ${response.error.description}`);
+        // Optionally, you could make an API call here to your backend to log the failure
+      });
+
       rzp.open();
     } catch (error) {
       console.error("Payment Error:", error);

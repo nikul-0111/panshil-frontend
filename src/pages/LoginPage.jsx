@@ -66,7 +66,7 @@ function LoginPage({ currentPage, onNavigate }) {
       onNavigate("/dashboard");
     } catch (err) {
       console.error(err);
-      setError(err.message || "કંઈક ત્રુટિ આવી");
+      setError(err.response?.data?.message || err.message || "કંઈક ત્રુટિ આવી");
     } finally {
       setLoading(false);
     }
