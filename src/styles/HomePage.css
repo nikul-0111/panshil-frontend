@@ -671,6 +671,10 @@
 }
 
 @media (max-width: 768px) {
+  .page-main {
+    padding: 20px 15px 30px; /* Reduced from 40px 20px 60px to decrease space before footer */
+  }
+
   .hero-section {
     flex-direction: column;
     display: flex;
