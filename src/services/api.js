@@ -9,7 +9,7 @@ const getBaseURL = () => {
 
 const api = axios.create({
   baseURL: getBaseURL(),
-  timeout: 30000, // 30-second timeout guard to catch spin-up delays or hangs
+  timeout: 90000, // 90-second timeout guard to handle Render free-tier spin up delays
   headers: {
     "Content-Type": "application/json",
   },
