@@ -1,93 +1,170 @@
-/* Existing Navbar CSS */
-
+/* ======================================
+   DESKTOP NAVBAR STYLES
+====================================== */
 .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 40px;
+  padding: 16px 40px;
+  background-color: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
-/* Other existing CSS... */
-
-.nav-actions {
+.brand {
   display: flex;
-  gap: 15px;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  cursor: pointer;
+  padding: 0;
 }
 
-/* ======================================
-   ADD THE MOBILE RESPONSIVE CSS BELOW
-====================================== */
+.brand-icon {
+  font-size: 28px;
+}
+
 .menu-toggle {
   display: none;
+  background: none;
   border: none;
-  background: transparent;
   font-size: 28px;
   cursor: pointer;
   color: #333;
-  z-index: 1001;
+  z-index: 1100;
+  /* Keep hamburger above the sidebar */
+  transition: color 0.3s ease;
 }
 
+.nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 20px;
+}
+
+.nav-link-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  font-weight: 500;
+  color: #4a5568;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.nav-link-btn:hover {
+  background-color: #f7fafc;
+  color: #2b6cb0;
+}
+
+.nav-link-btn.active {
+  color: #2b6cb0;
+  background-color: #ebf8ff;
+  font-weight: 600;
+}
+
+.nav-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.nav-link-btn.primary {
+  background-color: #2b6cb0;
+  color: white;
+}
+
+.nav-link-btn.primary:hover {
+  background-color: #2c5282;
+  box-shadow: 0 4px 6px rgba(43, 108, 176, 0.2);
+}
+
+/* ======================================
+   MOBILE SIDEBAR STYLES
+====================================== */
 @media (max-width: 768px) {
   .navbar {
-    padding: 15px 20px;
-    position: relative;
-    flex-wrap: wrap;
-  }
-
-  .brand {
-    font-size: 20px;
+    padding: 16px 20px;
   }
 
   .menu-toggle {
     display: block;
   }
 
+  /* Overlay for background blur when sidebar opens */
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(3px);
+    z-index: 1005;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .sidebar-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Sidebar styling off-screen */
   .nav-menu {
-    display: none;
-    flex-direction: column;
-    width: 100%;
+    position: fixed;
+    top: 0;
+    right: -280px;
+    /* Hidden off-screen to the right by default */
+    width: 280px;
+    height: 100vh;
     background-color: #ffffff;
-    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.05);
-    border-radius: 0 0 12px 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 80px 24px 24px 24px;
+    /* Give room for toggle button at top */
+    gap: 30px;
+    box-shadow: -4px 0 15px rgba(0, 0, 0, 0.1);
+    transition: right 0.3s ease-in-out;
+    z-index: 1010;
   }
 
   .nav-menu.active {
-    display: flex;
-    padding: 20px;
+    right: 0;
+    /* Slide in smoothly */
   }
 
   .nav-links {
-    display: flex;
     flex-direction: column;
-    gap: 15px;
-    list-style: none;
-    padding: 0;
-    margin: 0;
+    width: 100%;
+    gap: 12px;
   }
 
-  .nav-links a {
-    font-size: 16px;
-    font-weight: 500;
-    text-decoration: none;
-    color: #333;
-    display: block;
-    padding: 5px 0;
+  .nav-link-btn {
+    width: 100%;
+    text-align: left;
+    padding: 14px 16px;
+    font-size: 18px;
   }
 
   .nav-actions {
-    display: flex;
     flex-direction: column;
-    gap: 12px;
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px solid #eaeaea;
-  }
-
-  .nav-link-btn,
-  .primary {
     width: 100%;
-    text-align: center;
-    padding: 12px;
-    box-sizing: border-box;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 24px;
   }
 }

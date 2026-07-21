@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./Navbar.css";
 
 const navLinks = [
@@ -17,57 +16,76 @@ function Navbar({ currentPage, onNavigate }) {
     setMenuOpen(false);
   };
 
+  // Automatically close sidebar if screen is resized to desktop width
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768 && menuOpen) {
+        setMenuOpen(false);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [menuOpen]);
+
   return (
-    <header className="navbar">
-      <button
-        type="button"
-        className="brand"
-        onClick={() => navigate("/")}
-      >
-        <span className="brand-icon">🏡</span>
-        <span>PANCHSHIL</span>
-      </button>
+    <>
+      <header className="navbar">
+        <button
+          type="button"
+          className="brand"
+          onClick={() => navigate("/")}
+        >
+          <span className="brand-icon">🏡</span>
+          <span>PANCHSHIL</span>
+        </button>
 
-      {/* Mobile Menu Button */}
-      <button
-        className="menu-toggle"
-        onClick={() => setMenuOpen(!menuOpen)}
-      >
-        ☰
-      </button>
+        {/* Mobile Menu Button - toggles between hamburger and close icon */}
+        <button
+          className="menu-toggle"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle menu"
+        >
+          {menuOpen ? "✕" : "☰"}
+        </button>
 
-      <div className={`nav-menu ${menuOpen ? "active" : ""}`}>
-        <nav className="nav-links">
-          {navLinks.map((link) => (
+        <div className={`nav-menu ${menuOpen ? "active" : ""}`}>
+          <nav className="nav-links">
+            {navLinks.map((link) => (
+              <button
+                key={link.label}
+                className={`nav-link-btn ${currentPage === link.href ? "active" : ""
+                  }`}
+                onClick={() => navigate(link.href)}
+              >
+                {link.label}
+              </button>
+            ))}
+          </nav>
+
+          <div className="nav-actions">
             <button
-              key={link.label}
-              className={`nav-link-btn ${
-                currentPage === link.href ? "active" : ""
-              }`}
-              onClick={() => navigate(link.href)}
+              className="nav-link-btn"
+              onClick={() => navigate("/login")}
             >
-              {link.label}
+              લૉગિન
             </button>
-          ))}
-        </nav>
 
-        <div className="nav-actions">
-          <button
-            className="nav-link-btn"
-            onClick={() => navigate("/login")}
-          >
-            લૉગિન
-          </button>
-
-          <button
-            className="nav-link-btn primary"
-            onClick={() => navigate("/register")}
-          >
-            રજિસ્ટર
-          </button>
+            <button
+              className="nav-link-btn primary"
+              onClick={() => navigate("/register")}
+            >
+              રજિસ્ટર
+            </button>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Overlay to dim background when sidebar is open on mobile */}
+      <div
+        className={`sidebar-overlay ${menuOpen ? "active" : ""}`}
+        onClick={() => setMenuOpen(false)}
+      ></div>
+    </>
   );
 }
 
