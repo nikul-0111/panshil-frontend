@@ -1,9 +1,14 @@
 import axios from "axios";
 
+const getBaseURL = () => {
+  if (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+    return "https://panchshil-backend-final-u7nr.onrender.com";
+  }
+  return import.meta.env.VITE_API_URL || "http://localhost:5000";
+};
+
 const api = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_URL ||
-    "https://panchshil-backend-final-u7nr.onrender.com",
+  baseURL: getBaseURL(),
   timeout: 30000, // 30-second timeout guard to catch spin-up delays or hangs
   headers: {
     "Content-Type": "application/json",
