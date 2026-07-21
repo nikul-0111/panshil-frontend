@@ -26,10 +26,10 @@ function DashboardPage({ onNavigate }) {
   const [profileSuccess, setProfileSuccess] = useState("");
   const [profileLoading, setProfileLoading] = useState(false);
 
-  // Default dynamic data array
+  // Default dynamic data array (Amount finalized to 0)
   const [pendingDeaths, setPendingDeaths] = useState([
-    { id: 1, name: "શ્રી રમેશભાઈ પરમાર", village: "પાલનપુર", date: "08/07/2026", dueDate: "15/07/2026", amount: 50 },
-    { id: 2, name: "શ્રી અશોકભાઈ ચૌહાણ", village: "ડીસા", date: "12/07/2026", dueDate: "25/07/2026", amount: 50 }
+    { id: 1, name: "શ્રી રમેશભાઈ પરમાર", village: "પાલનપુર", date: "08/07/2026", dueDate: "15/07/2026", amount: 0 },
+    { id: 2, name: "શ્રી અશોકભાઈ ચૌહાણ", village: "ડીસા", date: "12/07/2026", dueDate: "25/07/2026", amount: 0 }
   ]);
 
   const [paymentHistory, setPaymentHistory] = useState([
@@ -56,7 +56,7 @@ function DashboardPage({ onNavigate }) {
     return pendingDeaths.reduce((sum, item) => {
       let finalAmount = Number(item.amount) || 0;
       if (isDueDatePassed(item.dueDate)) {
-        finalAmount += 50; // ₹50 Penalty added if past due date
+        finalAmount += 1; // ₹50 Penalty added if past due date
       }
       return sum + finalAmount;
     }, 0);
@@ -77,7 +77,8 @@ function DashboardPage({ onNavigate }) {
       document.body.appendChild(script);
     });
   };
-const handlePayment = async () => {
+
+  const handlePayment = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -86,7 +87,6 @@ const handlePayment = async () => {
         return;
       }
 
-      // totalAmount is already calculated by the calculateTotalAmount() helper
       if (totalAmount <= 0) {
         alert("ચુકવણી માટે કોઈ રકમ ઉપલબ્ધ નથી.");
         return;
@@ -118,7 +118,7 @@ const handlePayment = async () => {
       // 3. Configure Razorpay
       const options = {
         key: keyId,
-        amount: amount, // This should be in paise (e.g., 15000 for ₹150)
+        amount: amount, 
         currency: currency,
         name: "Panchshil Community Fund",
         description: `સહાય ફંડ કુલ ચૂકવણી - ₹${totalAmount}`,
@@ -136,7 +136,7 @@ const handlePayment = async () => {
 
             if (verifyRes.data.success) {
               alert("ચુકવણી સફળતાપૂર્વક પૂર્ણ થઈ ગઈ છે!");
-              setRefreshTrigger((prev) => prev + 1); // Triggers re-fetch of data
+              setRefreshTrigger((prev) => prev + 1);
             } else {
               alert("ચુકવણી ચકાસણી નિષ્ફળ ગઈ.");
             }
@@ -160,6 +160,7 @@ const handlePayment = async () => {
       alert("ચુકવણી પ્રક્રિયા શરૂ કરવામાં ભૂલ આવી.");
     }
   };
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -196,6 +197,7 @@ const handlePayment = async () => {
         const backendData = res.data.data || {};
         setPayment(backendData);
         if (backendData.pendingDeaths && backendData.pendingDeaths.length > 0) {
+          // If backend data is mapped, you can ensure amount is 0 if desired, or keep backend data
           setPendingDeaths(backendData.pendingDeaths);
         }
         if (backendData.history) setPaymentHistory(backendData.history);

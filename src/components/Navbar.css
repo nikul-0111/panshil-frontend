@@ -17,19 +17,19 @@
 /* ======================================
    ADD THE MOBILE RESPONSIVE CSS BELOW
 ====================================== */
-
 .menu-toggle {
   display: none;
   border: none;
   background: transparent;
   font-size: 28px;
   cursor: pointer;
+  color: #333;
+  z-index: 1001;
 }
 
-@media (max-width: 480px) {
-
+@media (max-width: 768px) {
   .navbar {
-    padding: 15px;
+    padding: 15px 20px;
     position: relative;
     flex-wrap: wrap;
   }
@@ -40,39 +40,54 @@
 
   .menu-toggle {
     display: block;
-    margin-left: auto;
   }
 
   .nav-menu {
     display: none;
+    flex-direction: column;
     width: 100%;
-    margin-top: 20px;
+    background-color: #ffffff;
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.05);
+    border-radius: 0 0 12px 12px;
   }
 
   .nav-menu.active {
-    display: block;
+    display: flex;
+    padding: 20px;
   }
 
   .nav-links {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .nav-links a {
+    font-size: 16px;
+    font-weight: 500;
+    text-decoration: none;
+    color: #333;
+    display: block;
+    padding: 5px 0;
   }
 
   .nav-actions {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    margin-top: 15px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eaeaea;
   }
 
-  .nav-link-btn {
+  .nav-link-btn,
+  .primary {
     width: 100%;
     text-align: center;
     padding: 12px;
-  }
-
-  .primary {
-    width: 100%;
+    box-sizing: border-box;
   }
 }
