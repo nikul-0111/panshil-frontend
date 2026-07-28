@@ -1274,25 +1274,27 @@ function DashboardPage({ onNavigate }) {
                               <div className="info-row"><span>📅 ચુકવણી તારીખ:</span><span>{displayPayDate}</span></div>
                               <div className="info-row"><span>💰 કુલ રકમ:</span><strong style={{ color: '#059669' }}>₹{row.amount || 50}</strong></div>
                               <div className="info-row"><span>🆔 પેમેન્ટ ID:</span><code style={{ fontSize: '0.82rem', color: '#475569', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>{pId}</code></div>
-                              <div className="info-row" style={{ marginTop: '6px' }}>
-                                <span>🧾 રસીદ:</span>
+                              <div style={{ marginTop: '10px' }}>
                                 <button
                                   onClick={() => generateReceiptPDF(row, profile)}
                                   style={{
-                                    fontSize: '0.82rem',
-                                    color: '#2563eb',
-                                    fontWeight: '600',
-                                    background: '#eff6ff',
-                                    padding: '4px 10px',
-                                    borderRadius: '6px',
+                                    width: '100%',
+                                    fontSize: '0.88rem',
+                                    color: '#1d4ed8',
+                                    fontWeight: '700',
+                                    background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                                    padding: '10px 14px',
+                                    borderRadius: '8px',
                                     border: '1px solid #bfdbfe',
                                     cursor: 'pointer',
-                                    display: 'inline-flex',
+                                    display: 'flex',
                                     alignItems: 'center',
-                                    gap: '4px'
+                                    justifyContent: 'center',
+                                    gap: '6px',
+                                    boxShadow: '0 2px 5px rgba(37,99,235,0.08)'
                                   }}
                                 >
-                                  {rcpNo} 📥 PDF ડાઉનલોડ
+                                  🧾 {rcpNo} • 📥 PDF રસીદ ડાઉનલોડ
                                 </button>
                               </div>
                             </div>
