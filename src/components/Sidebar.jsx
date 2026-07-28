@@ -40,6 +40,16 @@ function Sidebar({ tab, setTab, onLogout, mobileOpen, setMobileOpen }) {
           label: "ગામો",
         },
         {
+          id: "add_death_event",
+          icon: "➕",
+          label: "મરણ નોંધ ઉમેરો",
+        },
+        {
+          id: "death_reports",
+          icon: "📊",
+          label: "સહાય ફંડ રિપોર્ટ",
+        },
+        {
           id: "payment",
           icon: "💳",
           label: "ચુકવણી",
