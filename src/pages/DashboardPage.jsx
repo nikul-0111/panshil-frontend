@@ -4,6 +4,7 @@ import Topbar from "../components/Topbar";
 import DashboardCards from "../components/DashboardCards";
 import { transliterateEnglishToGujarati } from "../utils/translator";
 import { generateReceiptPDF } from "../utils/generateReceiptPDF";
+import { matchesSearch } from "../utils/transliterate";
 import api from "../services/api";
 import "../styles/Dashboard.css";
 
@@ -532,7 +533,7 @@ function DashboardPage({ onNavigate }) {
                         <tr><th>સભ્યનું નામ</th><th>મોબાઇલ નંબર</th><th>ગામ</th></tr>
                       </thead>
                       <tbody>
-                        {members.map((m) => (
+                        {members.filter(m => matchesSearch(m, search)).map((m) => (
                           <tr key={m._id}>
                             <td className="member-name-cell">
                               <div className="member-avatar-mini">{m.name ? m.name.charAt(0) : "👤"}</div>
@@ -547,7 +548,7 @@ function DashboardPage({ onNavigate }) {
                   </div>
                   <div className="table-responsive-mobile">
                     <div className="member-cards-grid">
-                      {members.map((m) => (
+                      {members.filter(m => matchesSearch(m, search)).map((m) => (
                         <div key={m._id} className="member-mobile-card">
                           <div className="member-mobile-card-header">
                             <div className="member-avatar-mini">{m.name ? m.name.charAt(0) : "👤"}</div>
@@ -584,9 +585,9 @@ function DashboardPage({ onNavigate }) {
                 </div>
               </div>
 
-              {villages.length > 0 ? (
+              {villages.filter(v => matchesSearch(v, search)).length > 0 ? (
                 <div className="villages-grid-premium">
-                  {villages.map((v) => {
+                  {villages.filter(v => matchesSearch(v, search)).map((v) => {
                     const maxMembers = Math.max(...villages.map(item => item.members), 1);
                     const percentage = Math.min(100, Math.round((v.members / maxMembers) * 100));
                     return (
@@ -921,25 +922,25 @@ function DashboardPage({ onNavigate }) {
               )}
 
               {/* Event Header Banner */}
-              <div className="event-header-banner" style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%)', border: '1.5px solid #bfdbfe', borderRadius: '12px', padding: '18px', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div className="event-header-banner" style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%)', border: '1.5px solid #bfdbfe', borderRadius: '12px', padding: '16px', marginBottom: '20px', width: '100%', boxSizing: 'border-box' }}>
+                <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
                   <span style={{ fontSize: '2rem' }}>💐</span>
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: '1 1 200px', minWidth: 0 }}>
                     {payment.activeDeathReport ? (
                       <>
-                        <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.1rem' }}>
+                        <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.05rem', wordBreak: 'break-word' }}>
                           ચાલુ મરણ સહાય: <strong>{payment.activeDeathReport.deceasedName}</strong> ({payment.activeDeathReport.village})
                         </h3>
-                        <p style={{ margin: '3px 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
+                        <p style={{ margin: '3px 0 0 0', color: '#64748b', fontSize: '0.85rem', wordBreak: 'break-word' }}>
                           મૃત્યુ તારીખ: {payment.activeDeathReport.deathDate} • અંતિમ તારીખ: {payment.activeDeathReport.dueDate} • નિયમિત યોગદાન: ₹50/સભ્ય
                         </p>
                       </>
                     ) : (
                       <>
-                        <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.1rem' }}>
+                        <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.05rem', wordBreak: 'break-word' }}>
                           ચાલુ મરણ સહાય: <strong>કોઈ સક્રિય મરણ સહાય નોંધાયેલ નથી</strong>
                         </h3>
-                        <p style={{ margin: '3px 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
+                        <p style={{ margin: '3px 0 0 0', color: '#64748b', fontSize: '0.85rem', wordBreak: 'break-word' }}>
                           એડમિન દ્વારા નવી સદગત નોંધ ઉમેરવામાં આવ્યા બાદ અહીં અને સભ્યોના એકાઉન્ટમાં ચુકવણી દર્શાવવામાં આવશે.
                         </p>
                       </>
@@ -949,28 +950,28 @@ function DashboardPage({ onNavigate }) {
               </div>
 
               {/* Financial Summary Cards */}
-              <div className="financial-summary-grid">
-                <div className="financial-summary-card" style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #cbd5e1' }}>
-                  <span style={{ fontSize: '0.82rem', color: '#64748b', display: 'block' }}>👥 કુલ સભ્યો Target</span>
-                  <h3 style={{ margin: '4px 0 0 0', color: '#0f172a', fontSize: '1.4rem' }}>{payment.analytics?.totalMembers || payment.totalMembers || 0} સભ્યો</h3>
-                  <span style={{ fontSize: '0.78rem', color: '#64748b' }}>લક્ષ્યાંક: ₹{payment.analytics?.totalTargetAmount || 0}</span>
+              <div className="financial-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '20px', width: '100%', boxSizing: 'border-box' }}>
+                <div className="financial-summary-card" style={{ background: '#f8fafc', padding: '14px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b', display: 'block' }}>👥 કુલ સભ્યો Target</span>
+                  <h3 style={{ margin: '4px 0 0 0', color: '#0f172a', fontSize: '1.3rem' }}>{payment.analytics?.totalMembers || payment.totalMembers || 0} સભ્યો</h3>
+                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>લક્ષ્યાંક: ₹{payment.analytics?.totalTargetAmount || 0}</span>
                 </div>
 
-                <div className="financial-summary-card" style={{ background: '#f0fdf4', padding: '16px', borderRadius: '10px', border: '1px solid #bbf7d0', cursor: 'pointer' }} onClick={() => setReportFilter('paid')}>
-                  <span style={{ fontSize: '0.82rem', color: '#166534', display: 'block' }}>🟢 એકત્રિત રકમ (ચૂકવેલ)</span>
-                  <h3 style={{ margin: '4px 0 0 0', color: '#15803d', fontSize: '1.4rem' }}>₹{payment.analytics?.totalCollectedAmount || 0}</h3>
-                  <span style={{ fontSize: '0.78rem', color: '#166534', fontWeight: '600' }}>{payment.analytics?.paidUsersCount || 0} સભ્યોએ રકમ ચૂકવી</span>
+                <div className="financial-summary-card" style={{ background: '#f0fdf4', padding: '14px 12px', borderRadius: '10px', border: '1px solid #bbf7d0', cursor: 'pointer', boxSizing: 'border-box' }} onClick={() => setReportFilter('paid')}>
+                  <span style={{ fontSize: '0.8rem', color: '#166534', display: 'block' }}>🟢 એકત્રિત રકમ (ચૂકવેલ)</span>
+                  <h3 style={{ margin: '4px 0 0 0', color: '#15803d', fontSize: '1.3rem' }}>₹{payment.analytics?.totalCollectedAmount || 0}</h3>
+                  <span style={{ fontSize: '0.75rem', color: '#166534', fontWeight: '600' }}>{payment.analytics?.paidUsersCount || 0} સભ્યોએ રકમ ચૂકવી</span>
                 </div>
 
-                <div className="financial-summary-card" style={{ background: '#fef2f2', padding: '16px', borderRadius: '10px', border: '1px solid #fecaca', cursor: 'pointer' }} onClick={() => setReportFilter('pending')}>
-                  <span style={{ fontSize: '0.82rem', color: '#991b1b', display: 'block' }}>🔴 બાકી રકમ (ચુકવણી બાકી)</span>
-                  <h3 style={{ margin: '4px 0 0 0', color: '#dc2626', fontSize: '1.4rem' }}>₹{payment.analytics?.remainingPendingAmount || 0}</h3>
-                  <span style={{ fontSize: '0.78rem', color: '#991b1b', fontWeight: '600' }}>{payment.analytics?.pendingUsersCount || 0} સભ્યોની રકમ બાકી</span>
+                <div className="financial-summary-card" style={{ background: '#fef2f2', padding: '14px 12px', borderRadius: '10px', border: '1px solid #fecaca', cursor: 'pointer', boxSizing: 'border-box' }} onClick={() => setReportFilter('pending')}>
+                  <span style={{ fontSize: '0.8rem', color: '#991b1b', display: 'block' }}>🔴 બાકી રકમ (ચુકવણી બાકી)</span>
+                  <h3 style={{ margin: '4px 0 0 0', color: '#dc2626', fontSize: '1.3rem' }}>₹{payment.analytics?.remainingPendingAmount || 0}</h3>
+                  <span style={{ fontSize: '0.75rem', color: '#991b1b', fontWeight: '600' }}>{payment.analytics?.pendingUsersCount || 0} સભ્યોની રકમ બાકી</span>
                 </div>
 
-                <div className="financial-summary-card" style={{ background: '#eff6ff', padding: '16px', borderRadius: '10px', border: '1px solid #bfdbfe' }}>
-                  <span style={{ fontSize: '0.82rem', color: '#1e40af', display: 'block' }}>📈 કલેક્શન પૂર્ણતા</span>
-                  <h3 style={{ margin: '4px 0 0 0', color: '#1d4ed8', fontSize: '1.4rem' }}>{payment.analytics?.progressPercentage || 0}%</h3>
+                <div className="financial-summary-card" style={{ background: '#eff6ff', padding: '14px 12px', borderRadius: '10px', border: '1px solid #bfdbfe', boxSizing: 'border-box' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#1e40af', display: 'block' }}>📈 કલેક્શન પૂર્ણતા</span>
+                  <h3 style={{ margin: '4px 0 0 0', color: '#1d4ed8', fontSize: '1.3rem' }}>{payment.analytics?.progressPercentage || 0}%</h3>
                   <div style={{ marginTop: '8px', background: '#dbeafe', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
                     <div style={{ width: `${payment.analytics?.progressPercentage || 0}%`, background: '#2563eb', height: '100%' }}></div>
                   </div>
@@ -978,47 +979,53 @@ function DashboardPage({ onNavigate }) {
               </div>
 
               {/* Filter Buttons & Search Wrapper */}
-              <div className="report-controls-wrapper">
-                <div className="report-filter-buttons">
+              <div className="report-controls-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px', width: '100%', boxSizing: 'border-box' }}>
+                <div className="report-filter-buttons" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', flex: '1 1 280px' }}>
                   <button
                     onClick={() => setReportFilter('paid')}
                     style={{
-                      padding: '10px 20px',
+                      flex: '1 1 130px',
+                      padding: '10px 14px',
                       borderRadius: '8px',
                       border: 'none',
                       fontWeight: '700',
                       cursor: 'pointer',
-                      fontSize: '0.9rem',
+                      fontSize: '0.85rem',
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
                       background: reportFilter === 'paid' ? '#166534' : '#f1f5f9',
                       color: reportFilter === 'paid' ? '#ffffff' : '#475569',
                       boxShadow: reportFilter === 'paid' ? '0 4px 10px rgba(22,101,52,0.2)' : 'none'
                     }}
                   >
-                    🟢 ચૂકવણી કરેલ સભ્યો ({(payment.paidUsersList || []).length})
+                    🟢 ચૂકવણી કરેલ ({(payment.paidUsersList || []).length})
                   </button>
                   <button
                     onClick={() => setReportFilter('pending')}
                     style={{
-                      padding: '10px 20px',
+                      flex: '1 1 130px',
+                      padding: '10px 14px',
                       borderRadius: '8px',
                       border: 'none',
                       fontWeight: '700',
                       cursor: 'pointer',
-                      fontSize: '0.9rem',
+                      fontSize: '0.85rem',
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
                       background: reportFilter === 'pending' ? '#dc2626' : '#f1f5f9',
                       color: reportFilter === 'pending' ? '#ffffff' : '#475569',
                       boxShadow: reportFilter === 'pending' ? '0 4px 10px rgba(220,38,38,0.2)' : 'none'
                     }}
                   >
-                    🔴 ચુકવણી બાકી સભ્યો ({(payment.pendingUsersList || []).length})
+                    🔴 ચુકવણી બાકી ({(payment.pendingUsersList || []).length})
                   </button>
                 </div>
 
-                <div className="search-wrapper" style={{ margin: 0 }}>
+                <div className="search-wrapper" style={{ margin: 0, flex: '1 1 220px', width: '100%', boxSizing: 'border-box' }}>
                   <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                   </svg>
-                  <input className="search-box-premium" placeholder="નામ કે ગામથી શોધો..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                  <input className="search-box-premium" placeholder="નામ કે ગામથી શોધો..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: '100%', boxSizing: 'border-box' }} />
                 </div>
               </div>
 
@@ -1026,8 +1033,8 @@ function DashboardPage({ onNavigate }) {
               {reportFilter === 'paid' && (
                 <>
                   <div className="scroll-hint-bar">👈 ડાબે-જમણે સ્ક્રૉલ કરો (Scroll Side-to-Side) 👉</div>
-                  <div className="table-scroll-container">
-                    <table className="dashboard-table-premium">
+                  <div className="table-scroll-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%', boxSizing: 'border-box' }}>
+                    <table className="dashboard-table-premium" style={{ width: '100%', minWidth: '650px', borderCollapse: 'collapse' }}>
                       <thead>
                         <tr>
                           <th>સભ્યનું નામ</th>
@@ -1042,7 +1049,7 @@ function DashboardPage({ onNavigate }) {
                       </thead>
                       <tbody>
                         {(payment.paidUsersList || [])
-                          .filter(u => !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.village.toLowerCase().includes(search.toLowerCase()) || u.mobile.includes(search))
+                          .filter(u => matchesSearch(u, search))
                           .map((row) => (
                             <tr key={row.id}>
                               <td><strong>{row.name}</strong></td>
@@ -1067,11 +1074,11 @@ function DashboardPage({ onNavigate }) {
                   </div>
 
                   {/* Paid Members Mobile Cards View */}
-                  <div className="death-report-mobile-cards">
+                  <div className="death-report-mobile-cards" style={{ width: '100%', boxSizing: 'border-box' }}>
                     {(payment.paidUsersList || [])
-                      .filter(u => !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.village.toLowerCase().includes(search.toLowerCase()) || u.mobile.includes(search))
+                      .filter(u => matchesSearch(u, search))
                       .map((row) => (
-                        <div key={row.id} className="death-report-card">
+                        <div key={row.id} className="death-report-card" style={{ width: '100%', boxSizing: 'border-box' }}>
                           <div className="death-report-card-header">
                             <div>
                               <h4 style={{ margin: 0, fontSize: '1rem', color: '#0f172a' }}>{row.name}</h4>
@@ -1103,8 +1110,8 @@ function DashboardPage({ onNavigate }) {
               {reportFilter === 'pending' && (
                 <>
                   <div className="scroll-hint-bar">👈 ડાબે-જમણે સ્ક્રૉલ કરો (Scroll Side-to-Side) 👉</div>
-                  <div className="table-scroll-container">
-                    <table className="dashboard-table-premium">
+                  <div className="table-scroll-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%', boxSizing: 'border-box' }}>
+                    <table className="dashboard-table-premium" style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse' }}>
                       <thead>
                         <tr>
                           <th>સભ્યનું નામ</th>
@@ -1117,7 +1124,7 @@ function DashboardPage({ onNavigate }) {
                       </thead>
                       <tbody>
                         {(payment.pendingUsersList || [])
-                          .filter(u => !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.village.toLowerCase().includes(search.toLowerCase()) || u.mobile.includes(search))
+                          .filter(u => matchesSearch(u, search))
                           .map((u) => (
                             <tr key={u.id}>
                               <td><strong>{u.name}</strong></td>
@@ -1133,11 +1140,11 @@ function DashboardPage({ onNavigate }) {
                   </div>
 
                   {/* Pending Members Mobile Cards View */}
-                  <div className="death-report-mobile-cards">
+                  <div className="death-report-mobile-cards" style={{ width: '100%', boxSizing: 'border-box' }}>
                     {(payment.pendingUsersList || [])
-                      .filter(u => !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.village.toLowerCase().includes(search.toLowerCase()) || u.mobile.includes(search))
+                      .filter(u => matchesSearch(u, search))
                       .map((u) => (
-                        <div key={u.id} className="death-report-card">
+                        <div key={u.id} className="death-report-card" style={{ width: '100%', boxSizing: 'border-box' }}>
                           <div className="death-report-card-header">
                             <div>
                               <h4 style={{ margin: 0, fontSize: '1rem', color: '#0f172a' }}>{u.name}</h4>
