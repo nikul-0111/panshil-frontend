@@ -764,6 +764,33 @@ function DashboardPage({ onNavigate }) {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Mobile Cards View for Recently Active Death Events */}
+                <div className="death-report-mobile-cards">
+                  {payment.activeDeathReport ? (
+                    <div className="death-report-card">
+                      <div className="death-report-card-header">
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: '1rem', color: '#0f172a' }}>{payment.activeDeathReport.deceasedName}</h4>
+                          <span className="village-badge-table" style={{ marginTop: '4px', display: 'inline-block' }}>{payment.activeDeathReport.village}</span>
+                        </div>
+                        <strong style={{ color: '#166534', fontSize: '1.1rem' }}>₹50</strong>
+                      </div>
+                      <div className="death-report-card-body">
+                        <div className="info-row"><span>📅 મૃત્યુ તારીખ:</span> <span>{payment.activeDeathReport.deathDate}</span></div>
+                        <div className="info-row"><span>⏳ અંતિમ તારીખ:</span> <span>{payment.activeDeathReport.dueDate}</span></div>
+                        <div className="info-row">
+                          <span>📌 સ્થિતિ:</span>
+                          <span className="status-pill active" style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac', fontSize: '0.75rem', padding: '2px 8px' }}>🟢 સક્રિય (Active)</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: 'center', color: '#64748b', padding: '20px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                      કોઈ સક્રિય મરણ નોંધ નથી.
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -922,26 +949,26 @@ function DashboardPage({ onNavigate }) {
               </div>
 
               {/* Financial Summary Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '25px' }}>
-                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #cbd5e1' }}>
+              <div className="financial-summary-grid">
+                <div className="financial-summary-card" style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #cbd5e1' }}>
                   <span style={{ fontSize: '0.82rem', color: '#64748b', display: 'block' }}>👥 કુલ સભ્યો Target</span>
                   <h3 style={{ margin: '4px 0 0 0', color: '#0f172a', fontSize: '1.4rem' }}>{payment.analytics?.totalMembers || payment.totalMembers || 0} સભ્યો</h3>
                   <span style={{ fontSize: '0.78rem', color: '#64748b' }}>લક્ષ્યાંક: ₹{payment.analytics?.totalTargetAmount || 0}</span>
                 </div>
 
-                <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '10px', border: '1px solid #bbf7d0', cursor: 'pointer' }} onClick={() => setReportFilter('paid')}>
-                  <span style={{ fontSize: '0.82rem', color: '#166534', display: 'block' }}>🟢 એકત્રિત રકમ (ચૂકવેલ સભ્યો)</span>
+                <div className="financial-summary-card" style={{ background: '#f0fdf4', padding: '16px', borderRadius: '10px', border: '1px solid #bbf7d0', cursor: 'pointer' }} onClick={() => setReportFilter('paid')}>
+                  <span style={{ fontSize: '0.82rem', color: '#166534', display: 'block' }}>🟢 એકત્રિત રકમ (ચૂકવેલ)</span>
                   <h3 style={{ margin: '4px 0 0 0', color: '#15803d', fontSize: '1.4rem' }}>₹{payment.analytics?.totalCollectedAmount || 0}</h3>
                   <span style={{ fontSize: '0.78rem', color: '#166534', fontWeight: '600' }}>{payment.analytics?.paidUsersCount || 0} સભ્યોએ રકમ ચૂકવી</span>
                 </div>
 
-                <div style={{ background: '#fef2f2', padding: '16px', borderRadius: '10px', border: '1px solid #fecaca', cursor: 'pointer' }} onClick={() => setReportFilter('pending')}>
-                  <span style={{ fontSize: '0.82rem', color: '#991b1b', display: 'block' }}>🔴 બાકી રકમ (ચુકવણી બાકી સભ્યો)</span>
+                <div className="financial-summary-card" style={{ background: '#fef2f2', padding: '16px', borderRadius: '10px', border: '1px solid #fecaca', cursor: 'pointer' }} onClick={() => setReportFilter('pending')}>
+                  <span style={{ fontSize: '0.82rem', color: '#991b1b', display: 'block' }}>🔴 બાકી રકમ (ચુકવણી બાકી)</span>
                   <h3 style={{ margin: '4px 0 0 0', color: '#dc2626', fontSize: '1.4rem' }}>₹{payment.analytics?.remainingPendingAmount || 0}</h3>
                   <span style={{ fontSize: '0.78rem', color: '#991b1b', fontWeight: '600' }}>{payment.analytics?.pendingUsersCount || 0} સભ્યોની રકમ બાકી</span>
                 </div>
 
-                <div style={{ background: '#eff6ff', padding: '16px', borderRadius: '10px', border: '1px solid #bfdbfe' }}>
+                <div className="financial-summary-card" style={{ background: '#eff6ff', padding: '16px', borderRadius: '10px', border: '1px solid #bfdbfe' }}>
                   <span style={{ fontSize: '0.82rem', color: '#1e40af', display: 'block' }}>📈 કલેક્શન પૂર્ણતા</span>
                   <h3 style={{ margin: '4px 0 0 0', color: '#1d4ed8', fontSize: '1.4rem' }}>{payment.analytics?.progressPercentage || 0}%</h3>
                   <div style={{ marginTop: '8px', background: '#dbeafe', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
