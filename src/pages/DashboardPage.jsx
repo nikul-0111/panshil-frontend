@@ -626,7 +626,7 @@ function DashboardPage({ onNavigate }) {
               </div>
 
               {/* Form Card */}
-              <div style={{ background: '#ffffff', border: '1.5px solid #cbd5e1', borderRadius: '14px', padding: '24px', maxWidth: '650px', margin: '0 auto 30px auto', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+              <div className="add-death-panel-form-card" style={{ background: '#ffffff', border: '1.5px solid #cbd5e1', borderRadius: '14px', padding: '24px', maxWidth: '650px', margin: '0 auto 30px auto', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
                 <form onSubmit={handleAddDeathSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '700', color: '#1e293b', marginBottom: '6px' }}>
@@ -642,7 +642,7 @@ function DashboardPage({ onNavigate }) {
                     />
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div className="form-grid-2col">
                     <div>
                       <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '700', color: '#1e293b', marginBottom: '6px' }}>
                         🏘 ગામનું નામ *
@@ -672,7 +672,7 @@ function DashboardPage({ onNavigate }) {
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div className="form-grid-2col">
                     <div>
                       <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '700', color: '#1e293b', marginBottom: '6px' }}>
                         ⏳ ચુકવણીની અંતિમ તારીખ (Due Date) *
@@ -733,7 +733,8 @@ function DashboardPage({ onNavigate }) {
                 <h3 style={{ color: '#1e293b', fontSize: '1.1rem', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   📋 તાજેતરમાં જાહેર કરેલ સહાય ફંડ ની યાદી
                 </h3>
-                <div className="table-responsive-desktop">
+                <div className="scroll-hint-bar">👈 ડાબે-જમણે સ્ક્રૉલ કરો (Scroll Side-to-Side) 👉</div>
+                <div className="table-scroll-container">
                   <table className="dashboard-table-premium">
                     <thead>
                       <tr>
@@ -788,8 +789,8 @@ function DashboardPage({ onNavigate }) {
 
               {/* Add Death Event Modal */}
               {showAddDeathModal && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.65)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999, padding: '20px' }}>
-                  <div style={{ background: '#ffffff', borderRadius: '16px', maxWidth: '520px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+                <div className="add-death-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.65)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999, padding: '20px' }}>
+                  <div className="add-death-modal-content" style={{ background: '#ffffff', borderRadius: '16px', maxWidth: '520px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px', marginBottom: '16px' }}>
                       <h3 style={{ margin: 0, color: '#1e3a8a', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         💐 નવી સદગત મરણ નોંધ ઉમેરો
@@ -812,7 +813,7 @@ function DashboardPage({ onNavigate }) {
                         />
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div className="form-grid-2col">
                         <div>
                           <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
                             🏘 ગામનું નામ *
@@ -842,7 +843,7 @@ function DashboardPage({ onNavigate }) {
                         </div>
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div className="form-grid-2col">
                         <div>
                           <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
                             ⏳ ચુકવણીની અંતિમ તારીખ (Due Date) *
@@ -950,8 +951,8 @@ function DashboardPage({ onNavigate }) {
               </div>
 
               {/* Filter Buttons & Search Wrapper */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', gap: '10px' }}>
+              <div className="report-controls-wrapper">
+                <div className="report-filter-buttons">
                   <button
                     onClick={() => setReportFilter('paid')}
                     style={{
@@ -994,79 +995,141 @@ function DashboardPage({ onNavigate }) {
                 </div>
               </div>
 
-              {/* Paid Members Table View */}
+              {/* Paid Members View */}
               {reportFilter === 'paid' && (
-                <div className="table-responsive-desktop">
-                  <table className="dashboard-table-premium">
-                    <thead>
-                      <tr>
-                        <th>સભ્યનું નામ</th>
-                        <th>મોબાઇલ નંબર</th>
-                        <th>ગામ</th>
-                        <th>ચૂકવણી તારીખ & સમય</th>
-                        <th>રકમ</th>
-                        <th>પેમેન્ટ ID</th>
-                        <th>રસીદ નંબર</th>
-                        <th>ક્રિયા</th>
-                      </tr>
-                    </thead>
+                <>
+                  <div className="scroll-hint-bar">👈 ડાબે-જમણે સ્ક્રૉલ કરો (Scroll Side-to-Side) 👉</div>
+                  <div className="table-scroll-container">
+                    <table className="dashboard-table-premium">
+                      <thead>
+                        <tr>
+                          <th>સભ્યનું નામ</th>
+                          <th>મોબાઇલ નંબર</th>
+                          <th>ગામ</th>
+                          <th>ચૂકવણી તારીખ & સમય</th>
+                          <th>રકમ</th>
+                          <th>પેમેન્ટ ID</th>
+                          <th>રસીદ નંબર</th>
+                          <th>ક્રિયા</th>
+                        </tr>
+                      </thead>
                       <tbody>
-                      {(payment.paidUsersList || [])
-                        .filter(u => !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.village.toLowerCase().includes(search.toLowerCase()) || u.mobile.includes(search))
-                        .map((row) => (
-                          <tr key={row.id}>
-                            <td><strong>{row.name}</strong></td>
-                            <td>📞 {row.mobile}</td>
-                            <td><span className="village-badge-table">{row.village}</span></td>
-                            <td>{row.payDate}</td>
-                            <td><strong style={{ color: '#059669' }}>₹{row.amount}</strong></td>
-                            <td><code style={{ fontSize: '0.82rem', color: '#475569', background: '#f1f5f9', padding: '3px 7px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>{row.paymentId}</code></td>
-                            <td><span style={{ fontSize: '0.82rem', color: '#2563eb', fontWeight: '600' }}>🧾 {row.receiptNumber}</span></td>
-                            <td>
+                        {(payment.paidUsersList || [])
+                          .filter(u => !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.village.toLowerCase().includes(search.toLowerCase()) || u.mobile.includes(search))
+                          .map((row) => (
+                            <tr key={row.id}>
+                              <td><strong>{row.name}</strong></td>
+                              <td>📞 {row.mobile}</td>
+                              <td><span className="village-badge-table">{row.village}</span></td>
+                              <td>{row.payDate}</td>
+                              <td><strong style={{ color: '#059669' }}>₹{row.amount}</strong></td>
+                              <td><code style={{ fontSize: '0.82rem', color: '#475569', background: '#f1f5f9', padding: '3px 7px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>{row.paymentId}</code></td>
+                              <td><span style={{ fontSize: '0.82rem', color: '#2563eb', fontWeight: '600' }}>🧾 {row.receiptNumber}</span></td>
+                              <td>
+                                <button
+                                  onClick={() => generateReceiptPDF(row, profile)}
+                                  style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.8rem' }}
+                                >
+                                  📥 PDF
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Paid Members Mobile Cards View */}
+                  <div className="death-report-mobile-cards">
+                    {(payment.paidUsersList || [])
+                      .filter(u => !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.village.toLowerCase().includes(search.toLowerCase()) || u.mobile.includes(search))
+                      .map((row) => (
+                        <div key={row.id} className="death-report-card">
+                          <div className="death-report-card-header">
+                            <div>
+                              <h4 style={{ margin: 0, fontSize: '1rem', color: '#0f172a' }}>{row.name}</h4>
+                              <span className="village-badge-table" style={{ marginTop: '4px', display: 'inline-block' }}>{row.village}</span>
+                            </div>
+                            <strong style={{ color: '#059669', fontSize: '1.1rem' }}>₹{row.amount}</strong>
+                          </div>
+                          <div className="death-report-card-body">
+                            <div className="info-row"><span>📞 મોબાઇલ:</span> <strong>{row.mobile}</strong></div>
+                            <div className="info-row"><span>📅 તારીખ & સમય:</span> <span>{row.payDate}</span></div>
+                            <div className="info-row"><span>💳 પેમેન્ટ ID:</span> <code style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>{row.paymentId}</code></div>
+                            <div className="info-row"><span>🧾 રસીદ:</span> <span style={{ color: '#2563eb', fontWeight: '600' }}>{row.receiptNumber}</span></div>
+                            <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
                               <button
                                 onClick={() => generateReceiptPDF(row, profile)}
-                                style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.8rem' }}
+                                style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '8px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                               >
-                                📥 PDF
+                                📥 રસીદ PDF ડાઉનલોડ કરો
                               </button>
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </>
               )}
 
-              {/* Pending Members Table View */}
+              {/* Pending Members View */}
               {reportFilter === 'pending' && (
-                <div className="table-responsive-desktop">
-                  <table className="dashboard-table-premium">
-                    <thead>
-                      <tr>
-                        <th>સભ્યનું નામ</th>
-                        <th>મોબાઇલ નંબર</th>
-                        <th>ગામ</th>
-                        <th>બાકી સહાય ફંડ</th>
-                        <th>અંતિમ તારીખ</th>
-                        <th>સ્થિતિ</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(payment.pendingUsersList || [])
-                        .filter(u => !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.village.toLowerCase().includes(search.toLowerCase()) || u.mobile.includes(search))
-                        .map((u) => (
-                          <tr key={u.id}>
-                            <td><strong>{u.name}</strong></td>
-                            <td>📞 {u.mobile}</td>
-                            <td><span className="village-badge-table">{u.village}</span></td>
-                            <td><strong style={{ color: '#dc2626' }}>₹{u.amount}</strong></td>
-                            <td>{u.dueDate}</td>
-                            <td><span className="status-pill pending" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>⚠️ બાકી (Pending)</span></td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
+                <>
+                  <div className="scroll-hint-bar">👈 ડાબે-જમણે સ્ક્રૉલ કરો (Scroll Side-to-Side) 👉</div>
+                  <div className="table-scroll-container">
+                    <table className="dashboard-table-premium">
+                      <thead>
+                        <tr>
+                          <th>સભ્યનું નામ</th>
+                          <th>મોબાઇલ નંબર</th>
+                          <th>ગામ</th>
+                          <th>બાકી સહાય ફંડ</th>
+                          <th>અંતિમ તારીખ</th>
+                          <th>સ્થિતિ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(payment.pendingUsersList || [])
+                          .filter(u => !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.village.toLowerCase().includes(search.toLowerCase()) || u.mobile.includes(search))
+                          .map((u) => (
+                            <tr key={u.id}>
+                              <td><strong>{u.name}</strong></td>
+                              <td>📞 {u.mobile}</td>
+                              <td><span className="village-badge-table">{u.village}</span></td>
+                              <td><strong style={{ color: '#dc2626' }}>₹{u.amount}</strong></td>
+                              <td>{u.dueDate}</td>
+                              <td><span className="status-pill pending" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>⚠️ બાકી (Pending)</span></td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Pending Members Mobile Cards View */}
+                  <div className="death-report-mobile-cards">
+                    {(payment.pendingUsersList || [])
+                      .filter(u => !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.village.toLowerCase().includes(search.toLowerCase()) || u.mobile.includes(search))
+                      .map((u) => (
+                        <div key={u.id} className="death-report-card">
+                          <div className="death-report-card-header">
+                            <div>
+                              <h4 style={{ margin: 0, fontSize: '1rem', color: '#0f172a' }}>{u.name}</h4>
+                              <span className="village-badge-table" style={{ marginTop: '4px', display: 'inline-block' }}>{u.village}</span>
+                            </div>
+                            <strong style={{ color: '#dc2626', fontSize: '1.1rem' }}>₹{u.amount}</strong>
+                          </div>
+                          <div className="death-report-card-body">
+                            <div className="info-row"><span>📞 મોબાઇલ:</span> <strong>{u.mobile}</strong></div>
+                            <div className="info-row"><span>⏳ અંતિમ તારીખ:</span> <span>{u.dueDate}</span></div>
+                            <div className="info-row">
+                              <span>📌 સ્થિતિ:</span>
+                              <span className="status-pill pending" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: '0.75rem', padding: '2px 8px' }}>⚠️ બાકી (Pending)</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </>
               )}
             </div>
           )}
