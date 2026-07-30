@@ -1021,11 +1021,11 @@ function DashboardPage({ onNavigate }) {
                   </button>
                 </div>
 
-                <div className="search-wrapper" style={{ margin: 0, flex: '1 1 220px', width: '100%', boxSizing: 'border-box' }}>
-                  <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <div className="search-wrapper" style={{ position: 'relative', height: '44px', maxH: '44px', margin: 0, flex: '1 1 220px', width: '100%', boxSizing: 'border-box' }}>
+                  <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', width: '18px', height: '18px', color: '#94a3b8', pointerEvents: 'none', zIndex: 2 }}>
                     <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                   </svg>
-                  <input className="search-box-premium" placeholder="નામ કે ગામથી શોધો..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: '100%', boxSizing: 'border-box' }} />
+                  <input className="search-box-premium" placeholder="નામ કે ગામથી શોધો..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: '100%', height: '44px', padding: '10px 14px 10px 42px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem', boxSizing: 'border-box' }} />
                 </div>
               </div>
 
@@ -1140,7 +1140,7 @@ function DashboardPage({ onNavigate }) {
                   </div>
 
                   {/* Pending Members Mobile Cards View */}
-                  <div className="death-report-mobile-cards" style={{ width: '100%', boxSizing: 'border-box' }}>
+                  <div className="death-report-mobile-cards" style={{ width: '100%', boxSizing: 'border-box', marginTop: '4px' }}>
                     {(payment.pendingUsersList || [])
                       .filter(u => matchesSearch(u, search))
                       .map((u) => (
