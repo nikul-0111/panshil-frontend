@@ -921,7 +921,7 @@ function DashboardPage({ onNavigate }) {
               )}
 
               {/* Event Header Banner */}
-              <div style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%)', border: '1.5px solid #bfdbfe', borderRadius: '12px', padding: '18px', marginBottom: '20px' }}>
+              <div className="event-header-banner" style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%)', border: '1.5px solid #bfdbfe', borderRadius: '12px', padding: '18px', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '2rem' }}>💐</span>
                   <div style={{ flex: 1 }}>

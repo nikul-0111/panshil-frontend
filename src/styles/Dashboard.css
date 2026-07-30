@@ -1284,14 +1284,6 @@
   gap: 16px;
 }
 
-@media (max-width: 768px) {
-  .form-grid-2col {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-}
-
-/* Scrollable container with visible bottom horizontal scrollbar indicator line */
 .table-scroll-container {
   width: 100%;
   overflow-x: auto;
@@ -1300,86 +1292,8 @@
   border-radius: var(--radius-md);
   margin-bottom: 15px;
   background: #ffffff;
-  scrollbar-width: thin;
-  scrollbar-color: #2563eb #e2e8f0;
 }
 
-.table-scroll-container::-webkit-scrollbar {
-  height: 8px;
-}
-
-.table-scroll-container::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 4px;
-}
-
-.table-scroll-container::-webkit-scrollbar-thumb {
-  background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
-  border-radius: 4px;
-}
-
-.table-scroll-container::-webkit-scrollbar-thumb:hover {
-  background: #1e40af;
-}
-
-.scroll-hint-bar {
-  display: none;
-  font-size: 0.8rem;
-  color: #2563eb;
-  font-weight: 600;
-  text-align: right;
-  padding: 4px 8px 8px 8px;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-}
-
-@media (max-width: 768px) {
-  .scroll-hint-bar {
-    display: flex;
-  }
-}
-
-/* Sahya Fund Controls Responsive */
-.report-controls-wrapper {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.report-filter-buttons {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-@media (max-width: 768px) {
-  .report-controls-wrapper {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .report-filter-buttons {
-    width: 100%;
-  }
-
-  .report-filter-buttons button {
-    flex: 1;
-    text-align: center;
-    padding: 10px 10px !important;
-    font-size: 0.82rem !important;
-  }
-
-  .report-controls-wrapper .search-wrapper {
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-}
-
-/* Sahya Fund Mobile Cards */
 .death-report-mobile-cards {
   display: none;
   flex-direction: column;
@@ -1388,10 +1302,12 @@
 
 .death-report-card {
   background: #ffffff;
-  border: 1px solid #cbd5e1;
+  border: 1.5px solid #cbd5e1;
   border-radius: 12px;
   padding: 16px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .death-report-card-header {
@@ -1410,24 +1326,6 @@
   font-size: 0.9rem;
 }
 
-@media (max-width: 768px) {
-  .death-report-mobile-cards {
-    display: flex;
-  }
-}
-
-@media (max-width: 576px) {
-  .add-death-panel-form-card {
-    padding: 16px !important;
-  }
-  .add-death-modal-content {
-    padding: 16px !important;
-    max-height: 90vh;
-    overflow-y: auto;
-  }
-}
-
-/* Financial Summary Cards Responsive Grid */
 .financial-summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1435,13 +1333,56 @@
   margin-bottom: 25px;
 }
 
+/* --------------------------------------------------------------------------
+   STRICT MOBILE STYLING OVERRIDES FOR SCREEN WIDTH <= 768px
+   -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
-  .page-card {
-    padding: 16px 14px !important;
-    border-radius: 14px !important;
-    margin-bottom: 18px !important;
+  /* Prevent root horizontal overflow */
+  html, body, #root, .dashboard, .dashboard-main, .dashboard-content {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
   }
 
+  .dashboard-content {
+    padding: 12px 10px !important;
+  }
+
+  .page-card {
+    padding: 16px 12px !important;
+    border-radius: 14px !important;
+    margin-bottom: 16px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  .panel-header h2 {
+    font-size: 1.1rem !important;
+    line-height: 1.3 !important;
+    flex-wrap: wrap !important;
+  }
+
+  .event-header-banner {
+    padding: 12px 10px !important;
+    margin-bottom: 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .event-header-banner h3 {
+    font-size: 0.95rem !important;
+    line-height: 1.3 !important;
+    word-break: break-word !important;
+  }
+
+  .event-header-banner p {
+    font-size: 0.8rem !important;
+    word-break: break-word !important;
+  }
+
+  /* Form Card & Fields */
   .add-death-panel-form-card {
     padding: 16px 12px !important;
     border-radius: 12px !important;
@@ -1450,64 +1391,116 @@
     box-sizing: border-box !important;
   }
 
+  .form-grid-2col {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .form-grid-2col > div {
+    width: 100% !important;
+  }
+
   .add-death-panel-form-card input,
   .add-death-modal-content input {
-    font-size: 16px !important; /* Prevents auto zoom on iOS */
+    font-size: 16px !important;
     padding: 10px 12px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
   }
-}
 
-@media (max-width: 576px) {
+  /* Financial Summary Cards (1 Card Per Row on Mobile) */
   .financial-summary-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 18px;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+    margin-bottom: 20px !important;
   }
 
   .financial-summary-card {
-    padding: 12px 10px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 14px 12px !important;
+    border-radius: 10px !important;
   }
 
   .financial-summary-card h3 {
-    font-size: 1.1rem !important;
+    font-size: 1.3rem !important;
+  }
+
+  /* Controls & Filter Buttons */
+  .report-controls-wrapper {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+    margin-bottom: 16px !important;
   }
 
   .report-filter-buttons {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
     gap: 8px !important;
+    width: 100% !important;
   }
 
   .report-filter-buttons button {
     width: 100% !important;
-    padding: 10px 6px !important;
-    font-size: 0.78rem !important;
-    white-space: normal !important;
+    padding: 12px 10px !important;
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
     text-align: center !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    border-radius: 10px !important;
   }
 
+  .report-controls-wrapper .search-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .search-box-premium {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Hide Desktop Table and Show Mobile Cards on Mobile */
+  .table-scroll-container {
+    display: none !important;
+  }
+
+  .scroll-hint-bar {
+    display: none !important;
+  }
+
+  .death-report-mobile-cards {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  /* Modal Popup on Mobile */
   .add-death-modal-overlay {
     padding: 10px !important;
+    box-sizing: border-box !important;
   }
 
   .add-death-modal-content {
+    width: 100% !important;
+    max-width: 100% !important;
     padding: 16px 12px !important;
     max-height: 92vh !important;
     overflow-y: auto !important;
     border-radius: 14px !important;
+    box-sizing: border-box !important;
   }
 }
 
-@media (max-width: 400px) {
-  .financial-summary-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .report-filter-buttons {
-    grid-template-columns: 1fr !important;
-  }
-}
 
 
 
