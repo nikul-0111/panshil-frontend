@@ -22,6 +22,19 @@ function DashboardPage({ onNavigate }) {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [reportFilter, setReportFilter] = useState("paid");
 
+  const [language, setLanguage] = useState(() => localStorage.getItem("app_language") || "gu");
+  const [theme, setTheme] = useState(() => localStorage.getItem("app_theme") || "light");
+
+  const handleLanguageChange = (newLang) => {
+    setLanguage(newLang);
+    localStorage.setItem("app_language", newLang);
+  };
+
+  const handleThemeChange = (newTheme) => {
+    setTheme(newTheme);
+    localStorage.setItem("app_theme", newTheme);
+  };
+
   // Admin Add Death Event States
   const [showAddDeathModal, setShowAddDeathModal] = useState(false);
   const [deathForm, setDeathForm] = useState({ name: "", village: "", deathDate: "", dueDate: "", amount: 50 });
@@ -197,6 +210,134 @@ function DashboardPage({ onNavigate }) {
   const [profileError, setProfileError] = useState("");
   const [profileSuccess, setProfileSuccess] = useState("");
   const [profileLoading, setProfileLoading] = useState(false);
+
+  // Profile Avatar Modal States
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [avatarActiveTab, setAvatarActiveTab] = useState("gallery"); // 'gallery' | 'upload'
+  const [selectedAvatarChoice, setSelectedAvatarChoice] = useState("");
+  const [customAvatarPreview, setCustomAvatarPreview] = useState("");
+  const [avatarSaveLoading, setAvatarSaveLoading] = useState(false);
+  const [avatarModalError, setAvatarModalError] = useState("");
+
+  const presetAvatars = [
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Aria",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Jack",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Luna",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Oliver",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Sophia",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Leo",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Maya",
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=Noah",
+    "https://api.dicebear.com/7.x/bottts/svg?seed=Panchshil",
+    "https://api.dicebear.com/7.x/fun-emoji/svg?seed=Happy",
+    "https://api.dicebear.com/7.x/initials/svg?seed=" + encodeURIComponent(profile?.name || "PS")
+  ];
+
+  const compressAndResizeImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const MAX_SIZE = 350;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height = Math.round((height * MAX_SIZE) / width);
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width = Math.round((width * MAX_SIZE) / height);
+              height = MAX_SIZE;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", 0.85));
+        };
+        img.onerror = (err) => reject(err);
+      };
+      reader.onerror = (err) => reject(err);
+    });
+  };
+
+  const handleCustomPhotoSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setAvatarModalError("કૃપા કરીને માત્ર ફોટો ફાઈલ (JPG, PNG, WebP) પસંદ કરો.");
+      return;
+    }
+
+    setAvatarModalError("");
+    try {
+      const compressedDataUrl = await compressAndResizeImage(file);
+      setCustomAvatarPreview(compressedDataUrl);
+      setSelectedAvatarChoice(compressedDataUrl);
+    } catch (err) {
+      console.error(err);
+      setAvatarModalError("ફોટો પ્રક્રિયા કરવામાં ભૂલ આવી.");
+    }
+  };
+
+  const handleOpenAvatarModal = () => {
+    const currentAvatar = profile?.avatar || "";
+    setSelectedAvatarChoice(currentAvatar);
+    if (currentAvatar.startsWith("data:")) {
+      setCustomAvatarPreview(currentAvatar);
+      setAvatarActiveTab("upload");
+    } else {
+      setCustomAvatarPreview("");
+      setAvatarActiveTab("gallery");
+    }
+    setAvatarModalError("");
+    setShowAvatarModal(true);
+  };
+
+  const handleSaveAvatar = async () => {
+    setAvatarSaveLoading(true);
+    setAvatarModalError("");
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        onNavigate("/login");
+        return;
+      }
+
+      const res = await api.put(
+        "/api/auth/update-avatar",
+        { avatar: selectedAvatarChoice },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (res.data.success) {
+        const updatedUser = res.data.data.user;
+        setProfile(updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        setShowAvatarModal(false);
+        setRefreshTrigger((prev) => prev + 1);
+      } else {
+        setAvatarModalError(res.data.message || "ફોટો અપડેટ કરવામાં ભૂલ આવી.");
+      }
+    } catch (err) {
+      console.error(err);
+      setAvatarModalError(err.response?.data?.message || "સર્વર ભૂલ. કૃપા કરીને ફરી પ્રયાસ કરો.");
+    } finally {
+      setAvatarSaveLoading(false);
+    }
+  };
 
   // Dynamic data arrays initialized as empty
   const [pendingDeaths, setPendingDeaths] = useState([]);
@@ -390,6 +531,16 @@ function DashboardPage({ onNavigate }) {
 
     const headers = { Authorization: `Bearer ${token}` };
 
+    api.get("/api/auth/me", { headers })
+      .then((res) => {
+        if (res.data?.success && res.data?.data?.user) {
+          const freshUser = res.data.data.user;
+          setProfile(freshUser);
+          localStorage.setItem("user", JSON.stringify(freshUser));
+        }
+      })
+      .catch(console.error);
+
     api.get("/api/community/summary", { headers })
       .then((res) => setSummary(res.data.data || {}))
       .catch(console.error);
@@ -547,13 +698,14 @@ function DashboardPage({ onNavigate }) {
   };
 
   return (
-    <div className="dashboard">
+    <div className={`dashboard ${theme === "dark" ? "dark-mode" : ""} ${theme === "compact" ? "compact-mode" : ""}`}>
       <Sidebar
         tab={tab}
         setTab={handleTabChange}
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
         onLogout={logout}
+        language={language}
       />
 
       <div className="dashboard-main">
@@ -561,6 +713,8 @@ function DashboardPage({ onNavigate }) {
           profile={profile}
           mobileOpen={mobileOpen}
           setMobileOpen={setMobileOpen}
+          onOpenAvatarModal={handleOpenAvatarModal}
+          language={language}
         />
 
         <div className="dashboard-content">
@@ -1530,7 +1684,22 @@ function DashboardPage({ onNavigate }) {
               {!isEditing ? (
                 <div className="profile-container">
                   <div className="profile-sidebar">
-                    <div className="profile-avatar-large">{profile?.name ? profile.name.charAt(0) : "👤"}</div>
+                    <div 
+                      className="profile-avatar-large interactive-avatar" 
+                      onClick={handleOpenAvatarModal}
+                      title="પ્રોફાઇલ ફોટો બદલો / અપલોડ કરો"
+                    >
+                      {profile?.avatar ? (
+                        <img src={profile.avatar} alt="Profile" className="profile-avatar-img" />
+                      ) : (
+                        <>
+                          <span>{profile?.name ? profile.name.charAt(0).toUpperCase() : "👤"}</span>
+                          <div className="avatar-camera-badge" title="ફોટો ઉમેરો">
+                            📷
+                          </div>
+                        </>
+                      )}
+                    </div>
                     <h3>{profile?.name}</h3>
                     <span className="profile-badge">સક્રિય સભ્ય</span>
                     <button className="edit-profile-btn" onClick={handleStartEdit}>✏️ માહિતી સુધારો</button>
@@ -1546,7 +1715,22 @@ function DashboardPage({ onNavigate }) {
               ) : (
                 <form onSubmit={handleSaveProfile} className="profile-container">
                   <div className="profile-sidebar">
-                    <div className="profile-avatar-large">{profile?.name ? profile.name.charAt(0) : "👤"}</div>
+                    <div 
+                      className="profile-avatar-large interactive-avatar" 
+                      onClick={handleOpenAvatarModal}
+                      title="પ્રોફાઇલ ફોટો બદલો / અપલોડ કરો"
+                    >
+                      {profile?.avatar ? (
+                        <img src={profile.avatar} alt="Profile" className="profile-avatar-img" />
+                      ) : (
+                        <>
+                          <span>{profile?.name ? profile.name.charAt(0).toUpperCase() : "👤"}</span>
+                          <div className="avatar-camera-badge" title="ફોટો ઉમેરો">
+                            📷
+                          </div>
+                        </>
+                      )}
+                    </div>
                     <h3>માહિતી સુધારો</h3>
                     <div className="profile-edit-actions">
                       <button type="submit" className="save-profile-btn" disabled={profileLoading}>{profileLoading ? "સાચવી રહ્યું..." : "💾 સાચવો"}</button>
@@ -1564,6 +1748,114 @@ function DashboardPage({ onNavigate }) {
                   </div>
                 </form>
               )}
+            </div>
+          )}
+
+          {/* Settings Tab */}
+          {tab === "settings" && (
+            <div className="page-card settings-panel-card animate-fade-in">
+              <div className="settings-header-banner">
+                <div className="settings-title-group">
+                  <h2>⚙️ {language === "en" ? "System Settings" : "સિસ્ટમ સેટિંગ્સ"}</h2>
+                  <p>{language === "en" ? "Customize your language preferences, layout appearance, and display modes." : "તમારી ભાષા પસંદગી અને ડિસ્પ્લે થીમ સેટિંગ્સ બદલો."}</p>
+                </div>
+              </div>
+
+              <div className="settings-sections-grid">
+                {/* Language Selection Card */}
+                <div className="settings-card-item">
+                  <div className="settings-card-header">
+                    <div className="settings-card-icon">🌐</div>
+                    <div>
+                      <h3>{language === "en" ? "App Language" : "એપ્લિકેશન ભાષા"}</h3>
+                      <p>{language === "en" ? "Select your preferred display language" : "તમારી અનુકૂળતા મુજબ ભાષા પસંદ કરો"}</p>
+                    </div>
+                  </div>
+
+                  <div className="settings-option-buttons">
+                    <button 
+                      type="button" 
+                      className={`lang-option-btn ${language === "gu" ? "active" : ""}`}
+                      onClick={() => handleLanguageChange("gu")}
+                    >
+                      <span className="flag-icon">🇮🇳</span>
+                      <div className="lang-text">
+                        <strong>ગુજરાતી</strong>
+                        <span>Gujarati (ડિફોલ્ટ)</span>
+                      </div>
+                      {language === "gu" && <span className="active-check">✓</span>}
+                    </button>
+
+                    <button 
+                      type="button" 
+                      className={`lang-option-btn ${language === "en" ? "active" : ""}`}
+                      onClick={() => handleLanguageChange("en")}
+                    >
+                      <span className="flag-icon">🌐</span>
+                      <div className="lang-text">
+                        <strong>English</strong>
+                        <span>અંગ્રેજી ભાષા</span>
+                      </div>
+                      {language === "en" && <span className="active-check">✓</span>}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Theme & Layout Selection Card */}
+                <div className="settings-card-item">
+                  <div className="settings-card-header">
+                    <div className="settings-card-icon">🎨</div>
+                    <div>
+                      <h3>{language === "en" ? "Display Theme & Layout" : "લેઆઉટ થીમ અને ડિસ્પ્લે"}</h3>
+                      <p>{language === "en" ? "Choose color theme and layout density" : "કલર થીમ અને કમ્પેક્ટ મોડ પસંદ કરો"}</p>
+                    </div>
+                  </div>
+
+                  <div className="settings-theme-grid">
+                    <button 
+                      type="button" 
+                      className={`theme-card-btn ${theme === "light" ? "active" : ""}`}
+                      onClick={() => handleThemeChange("light")}
+                    >
+                      <div className="theme-preview light">
+                        <span className="preview-sun">☀️</span>
+                      </div>
+                      <div className="theme-info">
+                        <strong>{language === "en" ? "Light Mode" : "લાઇટ મોડ"}</strong>
+                        <span>{language === "en" ? "Standard bright view" : "સામાન્ય લાઇટ લુક"}</span>
+                      </div>
+                    </button>
+
+                    <button 
+                      type="button" 
+                      className={`theme-card-btn ${theme === "dark" ? "active" : ""}`}
+                      onClick={() => handleThemeChange("dark")}
+                    >
+                      <div className="theme-preview dark">
+                        <span className="preview-moon">🌙</span>
+                      </div>
+                      <div className="theme-info">
+                        <strong>{language === "en" ? "Dark Mode" : "ડાર્ક મોડ"}</strong>
+                        <span>{language === "en" ? "Sleek dark design" : "આંખો માટે અનુકૂળ ડાર્ક વ્યુ"}</span>
+                      </div>
+                    </button>
+
+                    <button 
+                      type="button" 
+                      className={`theme-card-btn ${theme === "compact" ? "active" : ""}`}
+                      onClick={() => handleThemeChange("compact")}
+                    >
+                      <div className="theme-preview compact">
+                        <span className="preview-grid">📱</span>
+                      </div>
+                      <div className="theme-info">
+                        <strong>{language === "en" ? "Compact Mode" : "કમ્પેક્ટ મોડ"}</strong>
+                        <span>{language === "en" ? "High density layout" : "વધુ માહિતી કમ્પેક્ટ રૂપે"}</span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -2654,6 +2946,125 @@ function DashboardPage({ onNavigate }) {
                       </>
                     )}
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Profile Photo Lightbox & Management Modal */}
+          {showAvatarModal && (
+            <div className="dp-modal-overlay" onClick={() => setShowAvatarModal(false)}>
+              <div className="dp-modal-card animate-scale-up" onClick={(e) => e.stopPropagation()}>
+                {/* Header */}
+                <div className="dp-modal-header">
+                  <div className="dp-modal-title">
+                    <span className="dp-modal-icon">👤</span>
+                    <h3>પ્રોફાઇલ ફોટો</h3>
+                  </div>
+                  <button className="dp-modal-close-btn" onClick={() => setShowAvatarModal(false)} title="બંધ કરો">
+                    ✕
+                  </button>
+                </div>
+
+                {/* Main Lightbox Hero Section */}
+                <div className="dp-hero-container">
+                  <div className="dp-photo-wrapper">
+                    {selectedAvatarChoice ? (
+                      <img src={selectedAvatarChoice} alt="Profile DP" className="dp-main-photo" />
+                    ) : (
+                      <div className="dp-initials-avatar">
+                        {profile?.name ? profile.name.charAt(0).toUpperCase() : "👤"}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="dp-user-info">
+                    <h4>{profile?.name || "સમાજ સભ્ય"}</h4>
+                    <span className="dp-status-badge">
+                      {selectedAvatarChoice ? (selectedAvatarChoice === profile?.avatar ? "✓ હાલનો પ્રોફાઇલ ફોટો" : "✨ નવો પસંદ કરેલ ફોટો") : "કોઈ ફોટો સેટ નથી"}
+                    </span>
+                  </div>
+
+                  {/* Action Bar */}
+                  <div className="dp-actions-bar">
+                    <label htmlFor="dpFileInput" className="dp-action-btn primary">
+                      📷 નવો ફોટો અપલોડ કરો
+                    </label>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      id="dpFileInput" 
+                      onChange={handleCustomPhotoSelect} 
+                      style={{ display: "none" }}
+                    />
+
+                    <button 
+                      type="button" 
+                      className={`dp-action-btn secondary ${avatarActiveTab === "gallery" ? "active" : ""}`}
+                      onClick={() => setAvatarActiveTab(avatarActiveTab === "gallery" ? "view" : "gallery")}
+                    >
+                      🎨 અવતાર ગેલેરી
+                    </button>
+
+                    {selectedAvatarChoice && (
+                      <button 
+                        type="button" 
+                        className="dp-action-btn danger"
+                        onClick={() => {
+                          setSelectedAvatarChoice("");
+                          setCustomAvatarPreview("");
+                        }}
+                        title="ફોટો કાઢી નાખો"
+                      >
+                        🗑️ કાઢી નાખો
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Error Banner if any */}
+                {avatarModalError && (
+                  <div className="dp-alert-error">
+                    ⚠️ {avatarModalError}
+                  </div>
+                )}
+
+                {/* Preset Avatar Gallery Drawer */}
+                {avatarActiveTab === "gallery" && (
+                  <div className="dp-gallery-drawer">
+                    <h5 className="dp-drawer-title">અવતાર પસંદ કરો:</h5>
+                    <div className="dp-gallery-grid">
+                      {presetAvatars.map((url, idx) => (
+                        <div 
+                          key={idx}
+                          className={`dp-gallery-item ${selectedAvatarChoice === url ? "selected" : ""}`}
+                          onClick={() => setSelectedAvatarChoice(url)}
+                        >
+                          <img src={url} alt={`Avatar ${idx + 1}`} />
+                          {selectedAvatarChoice === url && <div className="dp-item-check">✓</div>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Footer Controls */}
+                <div className="dp-modal-footer">
+                  <button 
+                    type="button" 
+                    className="dp-footer-btn save"
+                    onClick={handleSaveAvatar}
+                    disabled={avatarSaveLoading}
+                  >
+                    {avatarSaveLoading ? "સાચવી રહ્યું..." : "💾 સાચવો"}
+                  </button>
+                  <button 
+                    type="button" 
+                    className="dp-footer-btn cancel" 
+                    onClick={() => setShowAvatarModal(false)}
+                  >
+                    ❌ રદ કરો
+                  </button>
                 </div>
               </div>
             </div>

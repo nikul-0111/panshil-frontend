@@ -1,6 +1,6 @@
 import "./Sidebar.css";
 
-function Sidebar({ tab, setTab, onLogout, mobileOpen, setMobileOpen }) {
+function Sidebar({ tab, setTab, onLogout, mobileOpen, setMobileOpen, language = "gu" }) {
   const storedUser = localStorage.getItem("user");
   let isAdmin = false;
   if (storedUser) {
@@ -12,84 +12,86 @@ function Sidebar({ tab, setTab, onLogout, mobileOpen, setMobileOpen }) {
     }
   }
 
+  const isEn = language === "en";
+
   const menuItems = isAdmin
     ? [
         {
           id: "profile",
           icon: "👤",
-          label: "મારી પ્રોફાઇલ",
+          label: isEn ? "My Profile" : "મારી પ્રોફાઇલ",
         },
         {
           id: "family",
           icon: "👨‍👩‍👧‍👦",
-          label: "મારી ફેમિલી",
+          label: isEn ? "My Family" : "મારી ફેમિલી",
         },
         {
           id: "member_approvals",
           icon: "🔔",
-          label: "સભ્ય મંજૂરી",
+          label: isEn ? "Member Approvals" : "સભ્ય મંજૂરી",
         },
         {
           id: "family_approvals",
           icon: "👨‍👩‍👧‍👦",
-          label: "ફેમિલી મંજૂરીઓ",
+          label: isEn ? "Family Approvals" : "ફેમિલી મંજૂરીઓ",
         },
         {
           id: "family_directory",
           icon: "👨‍👩‍👧‍👦",
-          label: "કૌટુંબિક ડાયરેક્ટરી",
+          label: isEn ? "Family Directory" : "કૌટુંબિક ડાયરેક્ટરી",
         },
         {
           id: "members",
           icon: "👥",
-          label: "સભ્યોની યાદી",
+          label: isEn ? "Members List" : "સભ્યોની યાદી",
         },
         {
           id: "villages",
           icon: "🏘",
-          label: "ગામો",
+          label: isEn ? "Villages" : "ગામો",
         },
         {
           id: "community",
           icon: "🌍",
-          label: "સમાજ માહિતી",
+          label: isEn ? "Community Info" : "સમાજ માહિતી",
         },
         {
           id: "add_death_event",
           icon: "➕",
-          label: "મરણ નોંધ ઉમેરો",
+          label: isEn ? "Add Death Record" : "મરણ નોંધ ઉમેરો",
         },
         {
           id: "death_reports",
           icon: "📊",
-          label: "સહાય ફંડ રિપોર્ટ",
+          label: isEn ? "Fund Reports" : "સહાય ફંડ રિપોર્ટ",
         },
         {
           id: "payment",
           icon: "💳",
-          label: "ચુકવણી",
+          label: isEn ? "Payment" : "ચુકવણી",
         },
       ]
     : [
         {
           id: "profile",
           icon: "👤",
-          label: "મારી પ્રોફાઇલ",
+          label: isEn ? "My Profile" : "મારી પ્રોફાઇલ",
         },
         {
           id: "family",
           icon: "👨‍👩‍👧‍👦",
-          label: "મારી ફેમિલી",
+          label: isEn ? "My Family" : "મારી ફેમિલી",
         },
         {
           id: "community",
           icon: "🌍",
-          label: "સમાજ માહિતી",
+          label: isEn ? "Community Info" : "સમાજ માહિતી",
         },
         {
           id: "payment",
           icon: "💳",
-          label: "ચુકવણી",
+          label: isEn ? "Payment" : "ચુકવણી",
         },
       ];
 
@@ -112,8 +114,8 @@ function Sidebar({ tab, setTab, onLogout, mobileOpen, setMobileOpen }) {
 
       <aside className={`sidebar ${mobileOpen ? "open" : ""}`}>
         <div className="sidebar-header">
-          <h2>પંચશીલ સમાજ</h2>
-          <span className="sidebar-tag">{isAdmin ? "એડમિન પોર્ટલ" : "સભ્ય પોર્ટલ"}</span>
+          <h2>{isEn ? "Panchshil Community" : "પંચશીલ સમાજ"}</h2>
+          <span className="sidebar-tag">{isAdmin ? (isEn ? "Admin Portal" : "એડમિન પોર્ટલ") : (isEn ? "Member Portal" : "સભ્ય પોર્ટલ")}</span>
         </div>
 
         <nav className="sidebar-menu">
@@ -133,10 +135,20 @@ function Sidebar({ tab, setTab, onLogout, mobileOpen, setMobileOpen }) {
 
         <div className="sidebar-footer">
           <button
+            className={`settings-footer-btn ${
+              tab === "settings" ? "active" : ""
+            }`}
+            onClick={() => handleClick("settings")}
+          >
+            <span>⚙️</span>
+            <span>{isEn ? "Settings" : "સેટિંગ્સ"}</span>
+          </button>
+
+          <button
             className="logout-btn"
             onClick={onLogout}
           >
-            🚪 બહાર નીકળો
+            🚪 {isEn ? "Logout" : "બહાર નીકળો"}
           </button>
         </div>
       </aside>
