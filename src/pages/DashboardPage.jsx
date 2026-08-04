@@ -40,6 +40,58 @@ function DashboardPage({ onNavigate }) {
   const [deathForm, setDeathForm] = useState({ name: "", village: "", deathDate: "", dueDate: "", amount: 50 });
   const [deathLoading, setDeathLoading] = useState(false);
 
+  // Notification States
+  const [notifications, setNotifications] = useState([]);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+  const [broadcastForm, setBroadcastForm] = useState({ title: "", message: "", type: "announcement" });
+  const [broadcastLoading, setBroadcastLoading] = useState(false);
+
+  const fetchNotifications = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const res = await api.get("/api/notifications", { headers: { Authorization: `Bearer ${token}` } });
+      if (res.data?.success) {
+        setNotifications(res.data.data.notifications || []);
+        setUnreadNotifCount(res.data.data.unreadCount || 0);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      await api.put("/api/notifications/read-all", {}, { headers: { Authorization: `Bearer ${token}` } });
+      setUnreadNotifCount(0);
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSendBroadcast = async (e) => {
+    e.preventDefault();
+    setBroadcastLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await api.post("/api/notifications/broadcast", broadcastForm, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.data?.success) {
+        alert("જાહેરાત સફળતાપૂર્વક મોકલવામાં આવી છે!");
+        setShowBroadcastModal(false);
+        setBroadcastForm({ title: "", message: "", type: "announcement" });
+        fetchNotifications();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || "જાહેરાત મોકલવામાં ભૂલ આવી.");
+    } finally {
+      setBroadcastLoading(false);
+    }
+  };
+
   // Date Formatter Helper (Converts YYYY-MM-DD HTML5 calendar picker value to DD/MM/YYYY display)
   const formatDateToDDMMYYYY = (dateStr) => {
     if (!dateStr) return "";
@@ -467,11 +519,13 @@ function DashboardPage({ onNavigate }) {
 
             if (verifyRes.data.success) {
               const verifiedData = verifyRes.data.data || {};
+              const currentFamilyCount = payment.familyCoveredMembers || (1 + familyMembers.filter(m => m.status === 'approved').length) || 1;
               const receiptPayload = {
                 ...verifiedData,
                 name: pendingDeaths.map((d) => d.name).join(", "),
                 amount: totalAmount,
                 paymentId: response.razorpay_payment_id,
+                familyCoveredMembers: currentFamilyCount,
               };
 
               // Instantly clear pending deaths list from local state
@@ -528,6 +582,8 @@ function DashboardPage({ onNavigate }) {
         setProfile({});
       }
     }
+
+    fetchNotifications();
 
     const headers = { Authorization: `Bearer ${token}` };
 
@@ -715,6 +771,10 @@ function DashboardPage({ onNavigate }) {
           setMobileOpen={setMobileOpen}
           onOpenAvatarModal={handleOpenAvatarModal}
           language={language}
+          notifications={notifications}
+          unreadCount={unreadNotifCount}
+          onMarkAllRead={handleMarkAllRead}
+          onOpenBroadcastModal={() => setShowBroadcastModal(true)}
         />
 
         <div className="dashboard-content">
@@ -1934,17 +1994,6 @@ function DashboardPage({ onNavigate }) {
                   })}
                 </div>
               </div>
-
-              {/* About Section */}
-              <div className="community-about-card">
-                <div className="about-left">
-                  <span className="about-tag">📖 અમારા વિશે</span>
-                  <h3 className="about-title">પંચશીલ સમાજ — એક સૂત્ર, એક ઉદ્દેશ</h3>
-                  <p className="about-desc">
-                    ?????? ???? ? ????? ????? ???-???? ??? ??????? ??? ???????
-                  </p>
-                </div>
-              </div>
             </div>
           )}
 
@@ -3066,6 +3115,93 @@ function DashboardPage({ onNavigate }) {
                     ❌ રદ કરો
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Admin Broadcast Announcement Modal */}
+          {showBroadcastModal && (
+            <div className="dp-modal-overlay" onClick={() => setShowBroadcastModal(false)}>
+              <div className="dp-modal-card animate-scale-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
+                <div className="dp-modal-header" style={{ background: 'linear-gradient(135deg, #6d28d9, #7c3aed)' }}>
+                  <div className="dp-modal-title">
+                    <span className="dp-modal-icon">📢</span>
+                    <h3>નવી જાહેરાત / નોટિફિકેશન મોકલો</h3>
+                  </div>
+                  <button className="dp-modal-close-btn" onClick={() => setShowBroadcastModal(false)}>✕</button>
+                </div>
+
+                <form onSubmit={handleSendBroadcast} style={{ padding: '24px' }}>
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontWeight: '700', color: '#1e293b', marginBottom: '6px' }}>
+                      📌 નોટિફિકેશન શીર્ષક (Title) *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={broadcastForm.title}
+                      onChange={(e) => setBroadcastForm({ ...broadcastForm, title: e.target.value })}
+                      placeholder="દા.ત. સમાજ સ્નેહ મિલન કાર્યક્રમ 2026"
+                      style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontWeight: '700', color: '#1e293b', marginBottom: '6px' }}>
+                      🏷️ નોટિફિકેશન પ્રકાર (Type)
+                    </label>
+                    <select
+                      value={broadcastForm.type}
+                      onChange={(e) => setBroadcastForm({ ...broadcastForm, type: e.target.value })}
+                      style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
+                    >
+                      <option value="announcement">📢 જાહેરાત (Announcement)</option>
+                      <option value="death_event">🚨 સહાય યોજના / મરણ નોંધ</option>
+                      <option value="approval">🎉 મંજૂરી સંદેશ</option>
+                      <option value="system">ℹ️ સામાન્ય માહિતી</option>
+                    </select>
+                  </div>
+
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', fontWeight: '700', color: '#1e293b', marginBottom: '6px' }}>
+                      📝 સંદેશ વિગત (Message) *
+                    </label>
+                    <textarea
+                      rows="4"
+                      required
+                      value={broadcastForm.message}
+                      onChange={(e) => setBroadcastForm({ ...broadcastForm, message: e.target.value })}
+                      placeholder="તમામ સભ્યોને મોકલવા માટેનો વિગતવાર સંદેશ અહીં લખો..."
+                      style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem', resize: 'vertical' }}
+                    />
+                  </div>
+
+                  <div className="dp-modal-footer" style={{ padding: '0', background: 'transparent', borderTop: 'none' }}>
+                    <button
+                      type="submit"
+                      disabled={broadcastLoading}
+                      style={{
+                        padding: '12px 24px',
+                        background: 'linear-gradient(135deg, #6d28d9, #7c3aed)',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontWeight: '700',
+                        fontSize: '0.95rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {broadcastLoading ? "મોકલી રહ્યું..." : "📤 તમામ સભ્યોને મોકલો"}
+                    </button>
+                    <button
+                      type="button"
+                      className="dp-footer-btn cancel"
+                      onClick={() => setShowBroadcastModal(false)}
+                    >
+                      ❌ રદ કરો
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}

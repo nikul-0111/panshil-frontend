@@ -8,6 +8,12 @@ export const generateReceiptPDF = (payment, profile = {}, existingWindow = null)
   const amount = payment.amount || 50;
   const paymentId = payment.paymentId || payment.razorpayPaymentId || `pay_${(payment.id || payment._id || "0000").toString().slice(-8)}`;
 
+  const coveredCount = Number(payment.familyCoveredMembers || profile.familyCoveredMembers || 1);
+  const subCount = Math.max(0, coveredCount - 1);
+  const coveredText = coveredCount > 1
+    ? `${coveredCount} સભ્યો (૧ મોભી + ${subCount} પરિવાર સભ્યો)`
+    : `૧ સભ્ય (૧ મોભી)`;
+
   let printWindow = existingWindow;
   if (!printWindow || printWindow.closed) {
     printWindow = window.open("", "_blank", "width=850,height=950");
@@ -84,7 +90,7 @@ export const generateReceiptPDF = (payment, profile = {}, existingWindow = null)
           <tr><td class="label">કુટુંબના મોભીનું નામ:</td><td class="value">${memberName}</td></tr>
           <tr><td class="label">મોબાઇલ નંબર:</td><td class="value">${mobile}</td></tr>
           <tr><td class="label">ગામ:</td><td class="value">${village}</td></tr>
-          <tr><td class="label">કુટુંબના મંજૂર સભ્યો:</td><td class="value">${payment.familyCoveredMembers ? `${payment.familyCoveredMembers} સભ્યો (૧ મોભી + સભ્યો)` : '૧ સભ્ય'}</td></tr>
+          <tr><td class="label">કુલ પરિવૃત સભ્યો:</td><td class="value">${coveredText}</td></tr>
         </table>
 
         <div class="section-title">💐 સહાય ફંડ વિગતો (સદગત)</div>
