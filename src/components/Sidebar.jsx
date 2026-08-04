@@ -20,14 +20,24 @@ function Sidebar({ tab, setTab, onLogout, mobileOpen, setMobileOpen }) {
           label: "મારી પ્રોફાઇલ",
         },
         {
-          id: "community",
-          icon: "🌍",
-          label: "સમાજ માહિતી",
+          id: "family",
+          icon: "👨‍👩‍👧‍👦",
+          label: "મારી ફેમિલી",
         },
         {
           id: "member_approvals",
           icon: "🔔",
           label: "સભ્ય મંજૂરી",
+        },
+        {
+          id: "family_approvals",
+          icon: "👨‍👩‍👧‍👦",
+          label: "ફેમિલી મંજૂરીઓ",
+        },
+        {
+          id: "family_directory",
+          icon: "👨‍👩‍👧‍👦",
+          label: "કૌટુંબિક ડાયરેક્ટરી",
         },
         {
           id: "members",
@@ -38,6 +48,11 @@ function Sidebar({ tab, setTab, onLogout, mobileOpen, setMobileOpen }) {
           id: "villages",
           icon: "🏘",
           label: "ગામો",
+        },
+        {
+          id: "community",
+          icon: "🌍",
+          label: "સમાજ માહિતી",
         },
         {
           id: "add_death_event",
@@ -62,6 +77,11 @@ function Sidebar({ tab, setTab, onLogout, mobileOpen, setMobileOpen }) {
           label: "મારી પ્રોફાઇલ",
         },
         {
+          id: "family",
+          icon: "👨‍👩‍👧‍👦",
+          label: "મારી ફેમિલી",
+        },
+        {
           id: "community",
           icon: "🌍",
           label: "સમાજ માહિતી",
@@ -71,7 +91,7 @@ function Sidebar({ tab, setTab, onLogout, mobileOpen, setMobileOpen }) {
           icon: "💳",
           label: "ચુકવણી",
         },
-      ]; // Members and Villages have been removed here for standard users
+      ];
 
   const handleClick = (id) => {
     setTab(id);

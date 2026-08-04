@@ -70,7 +70,25 @@ function RegisterPage({ currentPage, onNavigate }) {
         <label>મોબાઇલ *</label>
         <input name="mobile" type="tel" value={formData.mobile} onChange={handleChange} placeholder="મોબાઇલ નંબર" required />
         <label>ગામ *</label>
-        <input name="village" value={formData.village} onChange={handleChange} placeholder="ગામ" required />
+        <input name="village" list="village-options" value={formData.village} onChange={handleChange} placeholder="ગામ પસંદ કરો અથવા લખો..." required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', marginBottom: '12px' }} />
+        <datalist id="village-options">
+          <option value="પાલનપુર" />
+          <option value="છાપી" />
+          <option value="ડીસા" />
+          <option value="મહેસાણા" />
+          <option value="સિદ્ધપુર" />
+          <option value="પાટણ" />
+          <option value="થરાદ" />
+          <option value="ધાનેરા" />
+          <option value="રાધનપુર" />
+          <option value="દાંતા" />
+          <option value="દિયોદર" />
+          <option value="ભાભર" />
+          <option value="વડનગર" />
+          <option value="ઊંઝા" />
+          <option value="વિસનગર" />
+          <option value="ખેરાલુ" />
+        </datalist>
         <label>ઉંમર *</label>
         <input name="age" type="number" min="1" max="120" value={formData.age} onChange={handleChange} placeholder="ઉંમર" required />
         <label>ઈમેઇલ (વૈકલ્પિક)</label>

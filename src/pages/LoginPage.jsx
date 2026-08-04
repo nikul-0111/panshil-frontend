@@ -97,6 +97,7 @@ function LoginPage({ currentPage, onNavigate }) {
           <input
             type="password"
             name="password"
+            autoComplete="current-password"
             value={formData.password}
             onChange={handleChange}
             required

@@ -31,6 +31,8 @@ export function transliterateEnglishToGujarati(text) {
     "thakorji": "ઠાકોરજી",
 
     // Names
+    "kanu": "કનુ",
+    "kanubhai": "કનુભાઈ",
     "ramesh": "રમેશ",
     "kanji": "કાનજી",
     "manu": "મનુ",
@@ -73,8 +75,15 @@ export function transliterateEnglishToGujarati(text) {
     "jayeshbhai": "જયેશભાઈ",
     "hitesh": "હિતેશ",
     "hiteshbhai": "હિતેશભાઈ",
+    "gopal": "ગોપાલ",
+    "amrut": "અમૃત",
+    "babu": "બાબુ",
 
     // Villages
+    "damedra": "દામોદરા",
+    "damodra": "દામોદરા",
+    "koyda": "કોયડા",
+    "koyada": "કોયડા",
     "chhapi": "છાપી",
     "chhaapi": "છાપી",
     "palanpur": "પાલનપુર",

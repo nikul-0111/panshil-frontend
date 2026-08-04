@@ -27,6 +27,16 @@ function DashboardPage({ onNavigate }) {
   const [deathForm, setDeathForm] = useState({ name: "", village: "", deathDate: "", dueDate: "", amount: 50 });
   const [deathLoading, setDeathLoading] = useState(false);
 
+  // Date Formatter Helper (Converts YYYY-MM-DD HTML5 calendar picker value to DD/MM/YYYY display)
+  const formatDateToDDMMYYYY = (dateStr) => {
+    if (!dateStr) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const [y, m, d] = dateStr.split("-");
+      return `${d}/${m}/${y}`;
+    }
+    return dateStr;
+  };
+
   const handleAddDeathSubmit = async (e) => {
     e.preventDefault();
     if (!deathForm.name || !deathForm.village || !deathForm.deathDate || !deathForm.dueDate) {
@@ -37,7 +47,14 @@ function DashboardPage({ onNavigate }) {
       setDeathLoading(true);
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
-      const res = await api.post("/api/admin/death-event", deathForm, { headers });
+
+      const payload = {
+        ...deathForm,
+        deathDate: formatDateToDDMMYYYY(deathForm.deathDate),
+        dueDate: formatDateToDDMMYYYY(deathForm.dueDate)
+      };
+
+      const res = await api.post("/api/admin/death-event", payload, { headers });
       if (res.data.success) {
         alert("સદગત મરણ નોંધ સફળતાપૂર્વક ઉમેરાઈ ગઈ છે.");
         setDeathForm({ name: "", village: "", deathDate: "", dueDate: "", amount: 50 });
@@ -51,6 +68,126 @@ function DashboardPage({ onNavigate }) {
       alert(err.response?.data?.message || "સર્વર ભૂલ. કૃપા કરીને ફરી પ્રયાસ કરો.");
     } finally {
       setDeathLoading(false);
+    }
+  };
+
+  // Family Sub-Members States
+  const [familyMembers, setFamilyMembers] = useState([]);
+  const [familyForm, setFamilyForm] = useState({ name: "", relation: "Father", gender: "Male", age: "", mobile: "", occupation: "" });
+  const [familyLoading, setFamilyLoading] = useState(false);
+  const [showAddFamilyModal, setShowAddFamilyModal] = useState(false);
+
+  // Family Directory & Pagination States
+  const [familyDirectory, setFamilyDirectory] = useState([]);
+  const [selectedDirectoryHeadId, setSelectedDirectoryHeadId] = useState(null);
+  const [memberCurrentPage, setMemberCurrentPage] = useState(1);
+  const [directoryCurrentPage, setDirectoryCurrentPage] = useState(1);
+  const [deathCurrentPage, setDeathCurrentPage] = useState(1);
+
+  // Admin Family Approvals States
+  const [familyRequests, setFamilyRequests] = useState([]);
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [selectedSubMember, setSelectedSubMember] = useState(null);
+  const [rejectionReasonInput, setRejectionReasonInput] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Admin History States (approved/rejected logs)
+  const [memberHistory, setMemberHistory] = useState([]);
+  const [familyHistory, setFamilyHistory] = useState([]);
+  const [memberHistoryPage, setMemberHistoryPage] = useState(1);
+  const [familyHistoryPage, setFamilyHistoryPage] = useState(1);
+  const HISTORY_PAGE_SIZE = 5;
+
+  // Admin Member Verification Inspector States
+  const [inspectItem, setInspectItem] = useState(null);
+
+  // Registered Community Villages List
+  const availableVillages = Array.from(new Set([
+    ...(summary.villages || []),
+    ...(villages.map(v => v.name) || []),
+    "પાલનપુર", "છાપી", "ડીસા", "મહેસાણા", "સિદ્ધપુર", "પાટણ", "થરાદ", "ધાનેરા", "રાધનપુર", "દાંતા", "દિયોદર", "ભાભર", "વડનગર", "ઊંઝા", "વિસનગર", "ખેરાલુ"
+  ])).filter(Boolean).sort();
+
+  // Duplicate Detector Helper (Checks if mobile or name+village already exists in active members)
+  const checkIsDuplicate = (targetItem) => {
+    if (!targetItem) return false;
+    const targetMobile = (targetItem.mobile || "").trim();
+    const targetName = (targetItem.name || "").trim().toLowerCase();
+    const targetVillage = (targetItem.village || targetItem.familyHead?.village || "").trim().toLowerCase();
+
+    return members.some((m) => {
+      if (m._id === targetItem._id) return false;
+      const mMobile = (m.mobile || "").trim();
+      const mName = (m.name || "").trim().toLowerCase();
+      const mVillage = (m.village || "").trim().toLowerCase();
+
+      if (targetMobile && mMobile && targetMobile === mMobile) return true;
+      if (targetName && mName && targetName === mName && mVillage && targetVillage && mVillage === targetVillage) return true;
+      return false;
+    });
+  };
+
+  const handleFamilyFormSubmit = async (e) => {
+    e.preventDefault();
+    if (!familyForm.name || !familyForm.relation) {
+      alert("કૃપા કરીને નામ અને સંબંધ ની પસંદગી કરો.");
+      return;
+    }
+    try {
+      setFamilyLoading(true);
+      const token = localStorage.getItem("token");
+      const headers = { Authorization: `Bearer ${token}` };
+      const res = await api.post("/api/family/members", familyForm, { headers });
+      if (res.data.success) {
+        alert("પરિવાર સભ્ય ઉમેરવાની વિનંતી સફળતાપૂર્વક મોકલવામાં આવી છે. એડમિન મંજૂરી બાદ ખાતામાં ઉમેરાશે.");
+        setFamilyForm({ name: "", relation: "Father", gender: "Male", age: "", mobile: "", occupation: "" });
+        setShowAddFamilyModal(false);
+        setRefreshTrigger((prev) => prev + 1);
+      } else {
+        alert(res.data.message || "પરિવાર સભ્ય સાચવવામાં સમસ્યા આવી.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("સર્વર ભૂલ. કૃપા કરીને થોડી વાર પછી પ્રયાસ કરો.");
+    } finally {
+      setFamilyLoading(false);
+    }
+  };
+
+  const handleDeleteFamilyMember = async (id) => {
+    if (!window.confirm("શું તમે ખરેખર આ પરિવાર સભ્યની વિનંતી રદ/દૂર કરવા માંગો છો?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      const headers = { Authorization: `Bearer ${token}` };
+      const res = await api.delete(`/api/family/members/${id}`, { headers });
+      if (res.data.success) {
+        alert("સભ્ય સફળતાપૂર્વક દૂર કરવામાં આવ્યો છે.");
+        setRefreshTrigger((prev) => prev + 1);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("દૂર કરવામાં નિષ્ફળ.");
+    }
+  };
+
+  const handleFamilyApproval = async (id, status, reason = "") => {
+    try {
+      setActionLoading(true);
+      const token = localStorage.getItem("token");
+      const headers = { Authorization: `Bearer ${token}` };
+      const res = await api.put(`/api/family/admin/requests/${id}`, { status, rejectionReason: reason }, { headers });
+      if (res.data.success) {
+        alert(status === 'approved' ? "પરિવાર સભ્ય સફળતાપૂર્વક મંજૂર થયો." : "પરિવાર સભ્ય નામંજૂર થયો.");
+        setRejectModalOpen(false);
+        setSelectedSubMember(null);
+        setRejectionReasonInput("");
+        setRefreshTrigger((prev) => prev + 1);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("ક્રિયા પૂર્ણ કરવામાં નિષ્ફળ.");
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -78,12 +215,14 @@ function DashboardPage({ onNavigate }) {
     return currentDate > dueDate;
   };
 
-  // Automated Late Fee Accumulator (₹50 Base + ₹50 Penalty if past due date)
+  // Automated Family Payment Calculation (₹50 per approved family member + ₹50 penalty per member if past due date)
   const calculateTotalAmount = () => {
+    const familyMultiplier = payment.familyCoveredMembers || (1 + familyMembers.filter(m => m.status === 'approved').length) || 1;
     return pendingDeaths.reduce((sum, item) => {
-      let itemAmount = Number(item.amount) > 0 ? Number(item.amount) : 50;
+      let singleFee = Number(item.amount) > 0 ? Number(item.amount) : 50;
+      let itemAmount = singleFee * familyMultiplier;
       if (isDueDatePassed(item.dueDate)) {
-        itemAmount += 50; // ₹50 Late Fee Penalty added if past due date
+        itemAmount += (50 * familyMultiplier); // ₹50 Late Fee Penalty per approved family member
       }
       return sum + itemAmount;
     }, 0);
@@ -274,13 +413,41 @@ function DashboardPage({ onNavigate }) {
       })
       .catch(console.error);
 
+    api.get("/api/family/members", { headers })
+      .then((res) => setFamilyMembers(res.data.data || []))
+      .catch(console.error);
+
     const parsedUser = storedUser ? JSON.parse(storedUser) : null;
     if (parsedUser && parsedUser.role === 'admin') {
       api.get("/api/admin/users/pending", { headers })
         .then((res) => setPendingUsers(res.data.data || []))
         .catch(console.error);
+
+      api.get("/api/family/admin/requests", { headers })
+        .then((res) => setFamilyRequests(res.data.data || []))
+        .catch(console.error);
+
+      api.get("/api/admin/users/history", { headers })
+        .then((res) => setMemberHistory(res.data.data || []))
+        .catch(console.error);
+
+      api.get("/api/admin/family/history", { headers })
+        .then((res) => setFamilyHistory(res.data.data || []))
+        .catch(console.error);
+
+      api.get("/api/admin/family-directory", { headers })
+        .then((res) => {
+          const list = res.data.data || [];
+          setFamilyDirectory(list);
+          if (list.length > 0 && !selectedDirectoryHeadId) {
+            setSelectedDirectoryHeadId(list[0]._id);
+          }
+        })
+        .catch(console.error);
     } else {
       setPendingUsers([]);
+      setFamilyRequests([]);
+      setFamilyDirectory([]);
     }
   }, [search, refreshTrigger]);
 
@@ -401,36 +568,55 @@ function DashboardPage({ onNavigate }) {
           {/* Registration Approvals Tab */}
           {tab === "member_approvals" && (
             <div className="page-card pending-users-panel">
-              <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '15px', marginBottom: '20px' }}>
-                <h2 style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
-                  🔔 નવા રજીસ્ટ્રેશન વિનંતીઓ
-                  {pendingUsers.length > 0 && <span className="pending-badge">{pendingUsers.length}</span>}
-                </h2>
-                <p className="panel-subtitle" style={{ margin: '5px 0 0 0' }}>કૃપા કરીને નીચેના સભ્યોની માહિતી ચકાસો અને મંજૂરી આપો.</p>
+              <div className="panel-header-flex" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '15px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div className="panel-title-area">
+                  <h2 style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
+                    🔔 નવા રજીસ્ટ્રેશન વિનંતીઓ
+                    {pendingUsers.length > 0 && <span className="pending-badge">{pendingUsers.length}</span>}
+                  </h2>
+                  <p className="panel-subtitle" style={{ margin: '5px 0 0 0' }}>કૃપા કરીને નીચેના સભ્યોની માહિતી ચકાસો અને મંજૂરી આપો.</p>
+                </div>
+                <div className="search-wrapper" style={{ position: 'relative', height: '44px', maxH: '44px', margin: 0, flex: '1 1 220px', width: '100%', boxSizing: 'border-box' }}>
+                  <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', width: '18px', height: '18px', color: '#94a3b8', pointerEvents: 'none', zIndex: 2 }}>
+                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <input className="search-box-premium" placeholder="નામ કે ગામથી શોધો..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: '100%', height: '44px', padding: '10px 14px 10px 42px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem', boxSizing: 'border-box' }} />
+                </div>
               </div>
 
-              {pendingUsers.length > 0 ? (
+              {pendingUsers.filter(u => matchesSearch(u, search)).length > 0 ? (
                 <div className="pending-users-list">
-                  {pendingUsers.map((user) => (
-                    <div key={user._id} className="pending-user-card">
-                      <div className="pending-user-info">
-                        <div className="pending-user-avatar">
-                          {user.name ? user.name.charAt(0) : "👤"}
+                  {pendingUsers.filter(u => matchesSearch(u, search)).map((user) => {
+                    const isDup = checkIsDuplicate(user);
+                    return (
+                      <div key={user._id} className="pending-user-card" style={{ border: isDup ? '1.5px solid #f59e0b' : '1px solid #e2e8f0', background: isDup ? '#fffbeb' : '#ffffff' }}>
+                        {isDup && (
+                          <div style={{ background: '#fef3c7', color: '#92400e', padding: '4px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '700', marginBottom: '8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            ⚠️ સંભવિત ડુપ્લિકેટ (સમાન મોબાઇલ અથવા ગામમાં આ નામનો સભ્ય નોંધાયેલ છે)
+                          </div>
+                        )}
+                        <div className="pending-user-info">
+                          <div className="pending-user-avatar">
+                            {user.name ? user.name.charAt(0) : "👤"}
+                          </div>
+                          <div className="pending-user-details">
+                            <h4>{user.name}</h4>
+                            <p>📞 <strong>મોબાઇલ:</strong> <a href={`tel:${user.mobile}`} style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '700' }}>{user.mobile} 📲 (ચકાસણી માટે કોલ કરો)</a></p>
+                            <p>🏘 <strong>ગામ:</strong> {user.village}</p>
+                            <p>🎂 <strong>ઉંમર:</strong> {user.age} વર્ષ</p>
+                            {user.email && <p>✉️ <strong>ઈમેઈલ:</strong> {user.email}</p>}
+                          </div>
                         </div>
-                        <div className="pending-user-details">
-                          <h4>{user.name}</h4>
-                          <p>📞 <strong>મોબાઇલ:</strong> {user.mobile}</p>
-                          <p>🏘 <strong>ગામ:</strong> {user.village}</p>
-                          <p>🎂 <strong>ઉંમર:</strong> {user.age} વર્ષ</p>
-                          {user.email && <p>✉️ <strong>ઈમેઈલ:</strong> {user.email}</p>}
+                        <div className="pending-user-actions" style={{ flexWrap: 'wrap', gap: '8px' }}>
+                          <button onClick={() => setInspectItem({ ...user, type: 'registration' })} style={{ background: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer' }}>
+                            🔍 વિગતો ચકાસો
+                          </button>
+                          <button className="approve-btn-premium" onClick={() => handleUserApproval(user._id, 'approved')}>✅ મંજૂર કરો</button>
+                          <button className="reject-btn-premium" onClick={() => handleUserApproval(user._id, 'rejected')}>❌ નામંજૂર</button>
                         </div>
                       </div>
-                      <div className="pending-user-actions">
-                        <button className="approve-btn-premium" onClick={() => handleUserApproval(user._id, 'approved')}>✅ મંજૂર કરો</button>
-                        <button className="reject-btn-premium" onClick={() => handleUserApproval(user._id, 'rejected')}>❌ નામંજૂર</button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="empty-search-state" style={{ padding: "40px 20px" }}>
@@ -438,8 +624,904 @@ function DashboardPage({ onNavigate }) {
                   <p>હાલમાં કોઈ નવી રજીસ્ટ્રેશન વિનંતીઓ બાકી નથી.</p>
                 </div>
               )}
+
+              {/* ───── Member History Section ───── */}
+              <div style={{ marginTop: '32px', borderTop: '2px dashed #e2e8f0', paddingTop: '28px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      📋 ઇતિહાસ — સ્વીકૃત / નામંજૂર સભ્ય-નોંધ
+                    </h3>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '0.83rem', color: '#64748b' }}>અત્યાર સુધી મંજૂર અથવા નામંજૂર કરાયેલ સભ્ય-નોંધ</p>
+                  </div>
+                  <span style={{ background: '#f1f5f9', color: '#475569', padding: '6px 14px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: '700', border: '1px solid #e2e8f0' }}>
+                    કુલ: {memberHistory.length} નોંધ
+                  </span>
+                </div>
+
+                {memberHistory.length > 0 ? (() => {
+                  const mhTotal = Math.ceil(memberHistory.length / HISTORY_PAGE_SIZE);
+                  const mhSlice = memberHistory.slice((memberHistoryPage - 1) * HISTORY_PAGE_SIZE, memberHistoryPage * HISTORY_PAGE_SIZE);
+                  return (
+                    <>
+                      <div className="hist-table-wrap">
+                        <table className="history-log-table">
+                          <thead>
+                            <tr>
+                              <th>#</th>
+                              <th>નામ</th>
+                              <th>ગામ</th>
+                              <th>ઉંમર</th>
+                              <th>મોબાઇલ</th>
+                              <th>નિર્ણય</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {mhSlice.map((u, i) => (
+                              <tr key={u._id}>
+                                <td style={{ color: '#94a3b8', fontWeight: 600 }}>{(memberHistoryPage - 1) * HISTORY_PAGE_SIZE + i + 1}</td>
+                                <td><strong>{u.name}</strong></td>
+                                <td>{u.village || '—'}</td>
+                                <td>{u.age ? `${u.age} વર્ષ` : '—'}</td>
+                                <td>{u.mobile || '—'}</td>
+                                <td>
+                                  {u.status === 'approved'
+                                    ? <span className="hist-badge-approved">✅ મંજૂર</span>
+                                    : <span className="hist-badge-rejected">❌ નામંજૂર</span>}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="hist-mobile-cards">
+                        {mhSlice.map((u) => (
+                          <div key={u._id} className={`hist-card ${u.status === 'approved' ? 'hist-card-approved' : 'hist-card-rejected'}`}>
+                            <div className="hist-card-top">
+                              <span className="hist-card-name">{u.name}</span>
+                              {u.status === 'approved'
+                                ? <span className="hist-badge-approved">✅ મંજૂર</span>
+                                : <span className="hist-badge-rejected">❌ નામંજૂર</span>}
+                            </div>
+                            <div className="hist-card-row"><span>🏘 ગામ:</span><span>{u.village || '—'}</span></div>
+                            <div className="hist-card-row"><span>📞 મોબાઇલ:</span><span>{u.mobile || '—'}</span></div>
+                            <div className="hist-card-row"><span>🎂 ઉંમર:</span><span>{u.age ? `${u.age} વર્ષ` : '—'}</span></div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {mhTotal > 1 && (
+                        <div className="hist-pagination">
+                          <button className="hist-pg-btn" disabled={memberHistoryPage <= 1} onClick={() => setMemberHistoryPage(p => p - 1)}>◄ પાછળ</button>
+                          {Array.from({ length: mhTotal }, (_, idx) => (
+                            <button key={idx} className={`hist-pg-num ${memberHistoryPage === idx + 1 ? 'active' : ''}`} onClick={() => setMemberHistoryPage(idx + 1)}>{idx + 1}</button>
+                          ))}
+                          <button className="hist-pg-btn" disabled={memberHistoryPage >= mhTotal} onClick={() => setMemberHistoryPage(p => p + 1)}>આગળ ►</button>
+                        </div>
+                      )}
+                    </>
+                  );
+                })() : (
+                  <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8', fontSize: '0.9rem' }}>📭 હજી કોઈ ઇતિહાસ ઉપલબ્ધ નથી.</div>
+                )}
+              </div>
             </div>
           )}
+
+          {/* Family Module Tab */}
+          {tab === "family" && (
+            <div className="page-card family-panel animate-fade-in">
+              <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '15px', marginBottom: '20px' }}>
+                <h2 style={{ color: '#1e3a8a', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
+                  👨‍👩‍👧‍👦 મારી ફેમિલી મોડ્યુલ (Family Management)
+                </h2>
+                <p className="panel-subtitle" style={{ margin: '5px 0 0 0' }}>
+                  કુટુંબના મુખ્ય સભ્ય (Family Head) તરીકે તમારા ઘરના તમામ સભ્યોની માહિતી ઉમેરો અને મંજૂરી સ્થિતિ ચકાસો.
+                </p>
+              </div>
+
+              {/* Family Summary Banner with Add Member Button */}
+              <div style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%)', border: '1.5px solid #bfdbfe', borderRadius: '12px', padding: '16px', marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                <div>
+                  <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.05rem' }}>
+                    👑 કુટુંબના મોભી: <strong>{profile?.name || 'સમાજ સભ્ય'}</strong> ({profile?.village || 'ગામ'})
+                  </h3>
+                  <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
+                    કુલ મંજૂર થયેલ સભ્યો: <strong>{1 + familyMembers.filter(m => m.status === 'approved').length} સભ્યો</strong> (૧ મોભી + {familyMembers.filter(m => m.status === 'approved').length} મંજૂર કુટુંબીજનો)
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ background: '#dbeafe', padding: '8px 16px', borderRadius: '20px', border: '1px solid #93c5fd', color: '#1e40af', fontWeight: '700', fontSize: '0.9rem' }}>
+                    💰 ફંડ ચુકવણી સહાય: {(1 + familyMembers.filter(m => m.status === 'approved').length)} × ₹૫૦ = ₹{(1 + familyMembers.filter(m => m.status === 'approved').length) * 50}
+                  </div>
+                  <button
+                    onClick={() => setShowAddFamilyModal(true)}
+                    style={{
+                      background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '10px 20px',
+                      borderRadius: '10px',
+                      fontWeight: '700',
+                      fontSize: '0.95rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 12px rgba(37,99,235,0.25)'
+                    }}
+                  >
+                    ➕ નવો પરિવાર સભ્ય ઉમેરો
+                  </button>
+                </div>
+              </div>
+
+              {/* Add Family Member Modal Popup */}
+              {showAddFamilyModal && (
+                <div className="add-death-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.65)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999, padding: '20px' }}>
+                  <div className="add-death-modal-content" style={{ background: '#ffffff', borderRadius: '16px', maxWidth: '600px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px', marginBottom: '16px' }}>
+                      <h3 style={{ margin: 0, color: '#1e3a8a', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        ➕ નવો પરિવાર સભ્ય ઉમેરો (Add Family Member)
+                      </h3>
+                      <button onClick={() => setShowAddFamilyModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: '#64748b' }}>×</button>
+                    </div>
+
+                    <form onSubmit={handleFamilyFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <div className="form-grid-2col">
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: '700', color: '#1e293b', marginBottom: '6px' }}>
+                            👤 સભ્યનું પૂરું નામ *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="દા.ત. રમેશભાઈ પરમાર"
+                            value={familyForm.name}
+                            onChange={(e) => setFamilyForm({ ...familyForm, name: e.target.value })}
+                            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: '#f8fafc' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: '700', color: '#1e293b', marginBottom: '6px' }}>
+                            🤝 સંબંધ (Relation) *
+                          </label>
+                          <select
+                            value={familyForm.relation}
+                            onChange={(e) => setFamilyForm({ ...familyForm, relation: e.target.value })}
+                            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: '#f8fafc' }}
+                          >
+                            <option value="Father">પિતા (Father)</option>
+                            <option value="Mother">માતા (Mother)</option>
+                            <option value="Wife">પત્ની (Wife)</option>
+                            <option value="Husband">પતિ (Husband)</option>
+                            <option value="Son">પુત્ર (Son)</option>
+                            <option value="Daughter">પુત્રી (Daughter)</option>
+                            <option value="Brother">ભાઈ (Brother)</option>
+                            <option value="Sister">બહેન (Sister)</option>
+                            <option value="Other">અન્ય (Other)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="form-grid-2col">
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: '700', color: '#1e293b', marginBottom: '6px' }}>
+                            🚻 જાતિ (Gender)
+                          </label>
+                          <select
+                            value={familyForm.gender}
+                            onChange={(e) => setFamilyForm({ ...familyForm, gender: e.target.value })}
+                            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: '#f8fafc' }}
+                          >
+                            <option value="Male">પુરુષ (Male)</option>
+                            <option value="Female">મહિલા (Female)</option>
+                            <option value="Other">અન્ય (Other)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: '700', color: '#1e293b', marginBottom: '6px' }}>
+                            🎂 ઉંમર (Age in Years)
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="દા.ત. 45"
+                            value={familyForm.age}
+                            onChange={(e) => setFamilyForm({ ...familyForm, age: e.target.value })}
+                            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: '#f8fafc' }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-grid-2col">
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: '700', color: '#1e293b', marginBottom: '6px' }}>
+                            📞 મોબાઇલ નંબર (વૈકલ્પિક)
+                          </label>
+                          <input
+                            type="tel"
+                            placeholder="૧૦ આંકડાનો મોબાઇલ નંબર"
+                            value={familyForm.mobile}
+                            onChange={(e) => setFamilyForm({ ...familyForm, mobile: e.target.value })}
+                            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: '#f8fafc' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: '700', color: '#1e293b', marginBottom: '6px' }}>
+                            💼 વ્યવસાય / કામગીરી (Occupation)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="દા.ત. ખેતી, નોકરી, અભ્યાસ"
+                            value={familyForm.occupation}
+                            onChange={(e) => setFamilyForm({ ...familyForm, occupation: e.target.value })}
+                            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: '#f8fafc' }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddFamilyModal(false)}
+                          style={{ padding: '9px 16px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+                        >
+                          રદ કરો
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={familyLoading}
+                          style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}
+                        >
+                          {familyLoading ? "મોકલી રહ્યું છે..." : "💾 પરિવાર સભ્ય વિનંતી મોકલો"}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Family Members List */}
+              <div>
+                <h3 style={{ color: '#0f172a', fontSize: '1.05rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  📋 તમારા પરિવારના નોંધાયેલ સભ્યોની યાદી ({familyMembers.length + 1})
+                </h3>
+
+                {/* Primary Family Head Card */}
+                <div style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '12px', padding: '14px 16px', marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#1e40af', background: '#dbeafe', padding: '2px 8px', borderRadius: '12px', fontWeight: '700' }}>👑 કુટુંબના મોભી (Family Head)</span>
+                    <h4 style={{ margin: '4px 0 0 0', fontSize: '1.05rem', color: '#1e3a8a' }}>{profile?.name}</h4>
+                    <p style={{ margin: '2px 0 0 0', fontSize: '0.85rem', color: '#475569' }}>📞 {profile?.mobile} • 🏘 {profile?.village}</p>
+                  </div>
+                  <span className="status-pill active" style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac' }}>🟢 મુખ્ય સભ્ય (Active)</span>
+                </div>
+
+                {/* Desktop Table for Sub-Members */}
+                <div className="table-scroll-container">
+                  <table className="dashboard-table-premium">
+                    <thead>
+                      <tr>
+                        <th>સભ્યનું નામ</th>
+                        <th>સંબંધ</th>
+                        <th>ઉંમર & જાતિ</th>
+                        <th>મોબાઇલ / કામગીરી</th>
+                        <th>મંજૂરી સ્થિતિ</th>
+                        <th>ક્રિયા</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {familyMembers.map((m) => (
+                        <tr key={m._id}>
+                          <td><strong>{m.name}</strong></td>
+                          <td><span className="village-badge-table">{m.relation}</span></td>
+                          <td>{m.age ? `${m.age} વર્ષ` : '-'} • {m.gender}</td>
+                          <td>{m.mobile ? `📞 ${m.mobile}` : (m.occupation || '-')}</td>
+                          <td>
+                            {m.status === 'approved' && <span className="status-pill active" style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac' }}>🟢 મંજૂર (Approved)</span>}
+                            {m.status === 'pending' && <span className="status-pill pending" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>⏳ વિનંતી બાકી (Pending)</span>}
+                            {m.status === 'rejected' && (
+                              <div>
+                                <span className="status-pill pending" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>🔴 નામંજૂર (Rejected)</span>
+                                {m.rejectionReason && <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', color: '#dc2626' }}>કારણ: {m.rejectionReason}</p>}
+                              </div>
+                            )}
+                          </td>
+                          <td>
+                            <button onClick={() => handleDeleteFamilyMember(m._id)} style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.8rem' }}>
+                              🗑️ રદ કરો
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Cards for Sub-Members */}
+                <div className="death-report-mobile-cards">
+                  {familyMembers.map((m) => (
+                    <div key={m._id} className="death-report-card">
+                      <div className="death-report-card-header">
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: '1rem', color: '#0f172a' }}>{m.name}</h4>
+                          <span className="village-badge-table" style={{ marginTop: '4px', display: 'inline-block' }}>{m.relation}</span>
+                        </div>
+                        {m.status === 'approved' && <span className="status-pill active" style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac', fontSize: '0.75rem', padding: '2px 8px' }}>🟢 મંજૂર</span>}
+                        {m.status === 'pending' && <span className="status-pill pending" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', fontSize: '0.75rem', padding: '2px 8px' }}>⏳ બાકી</span>}
+                        {m.status === 'rejected' && <span className="status-pill pending" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: '0.75rem', padding: '2px 8px' }}>🔴 નામંજૂર</span>}
+                      </div>
+                      <div className="death-report-card-body">
+                        <div className="info-row"><span>🎂 ઉંમર & જાતિ:</span> <span>{m.age ? `${m.age} વર્ષ` : '-'} • {m.gender}</span></div>
+                        {m.mobile && <div className="info-row"><span>📞 મોબાઇલ:</span> <strong>{m.mobile}</strong></div>}
+                        {m.occupation && <div className="info-row"><span>💼 વ્યવસાય:</span> <span>{m.occupation}</span></div>}
+                        {m.status === 'rejected' && m.rejectionReason && <div className="info-row" style={{ color: '#dc2626' }}><span>⚠️ નામંજૂર કારણ:</span> <strong>{m.rejectionReason}</strong></div>}
+                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+                          <button onClick={() => handleDeleteFamilyMember(m._id)} style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.82rem', width: '100%' }}>
+                            🗑️ વિનંતી રદ કરો
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Admin Family Approvals Tab */}
+          {tab === "family_approvals" && (
+            <div className="page-card pending-users-panel animate-fade-in">
+              <div className="panel-header-flex" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '15px', marginBottom: '20px' }}>
+                <div className="panel-title-area">
+                  <h2 style={{ color: '#1e3a8a', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
+                    👨‍👩‍👧‍👦 પરિવાર સભ્યોની મંજૂરીઓ ({familyRequests.filter(r => r.status === 'pending').length})
+                  </h2>
+                  <p className="panel-subtitle" style={{ margin: '5px 0 0 0' }}>
+                    કુટુંબના મોભીઓ દ્વારા મોકલવામાં આવેલ નવ-ઉમેરાયેલ પરિવાર સભ્યોની ચકાસણી કરી મંજૂર અથવા નામંજૂર કરો.
+                  </p>
+                </div>
+              </div>
+
+              {familyRequests.filter(r => r.status === 'pending').length > 0 ? (
+                <div className="pending-users-list">
+                  {familyRequests.filter(r => r.status === 'pending').map((reqItem) => {
+                    const isDup = checkIsDuplicate(reqItem);
+                    return (
+                      <div key={reqItem._id} className="pending-user-card" style={{ border: isDup ? '1.5px solid #f59e0b' : '1.5px solid #cbd5e1', borderRadius: '12px', padding: '16px', marginBottom: '14px', background: isDup ? '#fffbeb' : '#ffffff' }}>
+                        {isDup && (
+                          <div style={{ background: '#fef3c7', color: '#92400e', padding: '4px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '700', marginBottom: '8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            ⚠️ સંભવિત ડુપ્લિકેટ સભ્ય (આ જ નામ/મોબાઇલ સભ્ય પહેલાંથી નોંધાયેલ છે)
+                          </div>
+                        )}
+                        <div className="pending-user-info">
+                          <div className="pending-user-avatar" style={{ background: '#dbeafe', color: '#1e40af' }}>
+                            👨‍👩‍👧‍👦
+                          </div>
+                          <div className="pending-user-details">
+                            <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#0f172a' }}>{reqItem.name} ({reqItem.relation})</h4>
+                            <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#1e40af', fontWeight: '600' }}>
+                              👑 મોભી: {reqItem.familyHead?.name || 'N/A'} (📞 <a href={`tel:${reqItem.familyHead?.mobile}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{reqItem.familyHead?.mobile} 📲 કોલ કરો</a> • 🏘 {reqItem.familyHead?.village})
+                            </p>
+                            <p style={{ margin: '2px 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+                              🎂 ઉંમર: {reqItem.age || '-'} વર્ષ • 🚻 જાતિ: {reqItem.gender} {reqItem.mobile ? `• 📞 ${reqItem.mobile}` : ''} {reqItem.occupation ? `• 💼 ${reqItem.occupation}` : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="pending-user-actions" style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
+                          <button onClick={() => setInspectItem({ ...reqItem, type: 'family' })} style={{ background: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer' }}>
+                            🔍 વિગતો ચકાસો
+                          </button>
+                          <button
+                            className="approve-btn-premium"
+                            disabled={actionLoading}
+                            onClick={() => handleFamilyApproval(reqItem._id, 'approved')}
+                          >
+                            ✅ મંજૂર કરો
+                          </button>
+                          <button
+                            className="reject-btn-premium"
+                            disabled={actionLoading}
+                            onClick={() => {
+                              setSelectedSubMember(reqItem);
+                              setRejectModalOpen(true);
+                            }}
+                          >
+                            ❌ નામંજૂર કરો
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="empty-search-state" style={{ padding: "40px 20px" }}>
+                  <div className="empty-icon">👨‍👩‍👧‍👦</div>
+                  <p>હાલમાં કોઈ નવી પરિવાર સભ્ય મંજૂરી વિનંતીઓ બાકી નથી.</p>
+                </div>
+              )}
+
+              {/* Rejection Reason Modal */}
+              {rejectModalOpen && selectedSubMember && (
+                <div className="add-death-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+                  <div className="add-death-modal-content" style={{ background: '#ffffff', padding: '24px', borderRadius: '14px', width: '90%', maxWidth: '450px' }}>
+                    <h3 style={{ margin: '0 0 12px 0', color: '#dc2626' }}>❌ પરિવાર સભ્ય નામંજૂર કરો</h3>
+                    <p style={{ margin: '0 0 14px 0', fontSize: '0.9rem', color: '#475569' }}>
+                      સભ્ય: <strong>{selectedSubMember.name}</strong> ({selectedSubMember.relation})<br />
+                      મોભી: {selectedSubMember.familyHead?.name}
+                    </p>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '6px' }}>નામંજૂર કરવાનું ચોક્કસ કારણ:</label>
+                    <input
+                      type="text"
+                      placeholder="દા.ત. અયોગ્ય સંબંધ અથવા અધૂરા દસ્તાવેજ"
+                      value={rejectionReasonInput}
+                      onChange={(e) => setRejectionReasonInput(e.target.value)}
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', marginBottom: '16px', fontSize: '0.9rem' }}
+                    />
+                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                      <button onClick={() => setRejectModalOpen(false)} style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f1f5f9', cursor: 'pointer' }}>રદ કરો</button>
+                      <button onClick={() => handleFamilyApproval(selectedSubMember._id, 'rejected', rejectionReasonInput)} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: '#dc2626', color: '#ffffff', fontWeight: '700', cursor: 'pointer' }}>નામંજૂર સાચવો</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ───── Family History Section ───── */}
+              <div style={{ marginTop: '32px', borderTop: '2px dashed #e2e8f0', paddingTop: '28px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      📋 ઇતિહાસ — સ્વીકૃત / નામંજૂર પ.સ.-નોંધ
+                    </h3>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '0.83rem', color: '#64748b' }}>અત્યાર સુધી મંજૂર અથવા નામંજૂર કરાયેલ પરિવાર સભ્ય-નોંધ</p>
+                  </div>
+                  <span style={{ background: '#f1f5f9', color: '#475569', padding: '6px 14px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: '700', border: '1px solid #e2e8f0' }}>
+                    કુલ: {familyHistory.length} નોંધ
+                  </span>
+                </div>
+
+                {familyHistory.length > 0 ? (() => {
+                  const fhTotal = Math.ceil(familyHistory.length / HISTORY_PAGE_SIZE);
+                  const fhSlice = familyHistory.slice((familyHistoryPage - 1) * HISTORY_PAGE_SIZE, familyHistoryPage * HISTORY_PAGE_SIZE);
+                  return (
+                    <>
+                      <div className="hist-table-wrap">
+                        <table className="history-log-table">
+                          <thead>
+                            <tr>
+                              <th>#</th>
+                              <th>સભ્ય નામ</th>
+                              <th>સંબંધ</th>
+                              <th>મોભી</th>
+                              <th>ગામ</th>
+                              <th>નિર્ણય</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {fhSlice.map((r, i) => (
+                              <tr key={r._id}>
+                                <td style={{ color: '#94a3b8', fontWeight: 600 }}>{(familyHistoryPage - 1) * HISTORY_PAGE_SIZE + i + 1}</td>
+                                <td><strong>{r.name}</strong></td>
+                                <td><span className="village-badge-table">{r.relation}</span></td>
+                                <td>{r.familyHead?.name || '—'}</td>
+                                <td>{r.familyHead?.village || '—'}</td>
+                                <td>
+                                  {r.status === 'approved'
+                                    ? <span className="hist-badge-approved">✅ મંજૂર</span>
+                                    : <span className="hist-badge-rejected">❌ નામંજૂર</span>}
+                                  {r.status === 'rejected' && r.rejectionReason && (
+                                    <p style={{ margin: '3px 0 0 0', fontSize: '0.75rem', color: '#dc2626' }}>↳ {r.rejectionReason}</p>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="hist-mobile-cards">
+                        {fhSlice.map((r) => (
+                          <div key={r._id} className={`hist-card ${r.status === 'approved' ? 'hist-card-approved' : 'hist-card-rejected'}`}>
+                            <div className="hist-card-top">
+                              <span className="hist-card-name">{r.name} <small style={{ color: '#94a3b8' }}>({r.relation})</small></span>
+                              {r.status === 'approved'
+                                ? <span className="hist-badge-approved">✅ மங்குர</span>
+                                : <span className="hist-badge-rejected">❌ નામંજૂર</span>}
+                            </div>
+                            <div className="hist-card-row"><span>👑 મોભી:</span><span>{r.familyHead?.name || '—'}</span></div>
+                            <div className="hist-card-row"><span>🏘 ગામ:</span><span>{r.familyHead?.village || '—'}</span></div>
+                            {r.status === 'rejected' && r.rejectionReason && (
+                              <div className="hist-card-row" style={{ color: '#dc2626' }}><span>⚠️ કારણ:</span><span>{r.rejectionReason}</span></div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {fhTotal > 1 && (
+                        <div className="hist-pagination">
+                          <button className="hist-pg-btn" disabled={familyHistoryPage <= 1} onClick={() => setFamilyHistoryPage(p => p - 1)}>◄ પાછળ</button>
+                          {Array.from({ length: fhTotal }, (_, idx) => (
+                            <button key={idx} className={`hist-pg-num ${familyHistoryPage === idx + 1 ? 'active' : ''}`} onClick={() => setFamilyHistoryPage(idx + 1)}>{idx + 1}</button>
+                          ))}
+                          <button className="hist-pg-btn" disabled={familyHistoryPage >= fhTotal} onClick={() => setFamilyHistoryPage(p => p + 1)}>આગળ ►</button>
+                        </div>
+                      )}
+                    </>
+                  );
+                })() : (
+                  <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8', fontSize: '0.9rem' }}>📭 હજી કોઈ ઇતિહાસ ઉપલબ્ધ નથી.</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Admin Family Directory Split View Tab */}
+          {tab === "family_directory" && (
+            <div className="page-card family-directory-panel animate-fade-in">
+              <div className="panel-header-flex" style={{ borderBottom: '1.5px solid #e2e8f0', paddingBottom: '16px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h2 style={{ color: '#1e3a8a', display: 'flex', alignItems: 'center', gap: '10px', margin: 0, fontSize: '1.4rem' }}>
+                    👨‍👩‍👧‍👦 પરગણા કૌટુંબિક ડાયરેક્ટરી & વસ્તી પત્રક
+                  </h2>
+                  <p className="panel-subtitle" style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '0.9rem' }}>
+                    સમાજના તમામ કૌટુંબિક મોભીઓ અને તેમના પરગણા પરિવારના જોડાયેલા સભ્યોનું સંપૂર્ણ પત્રક
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div className="search-wrapper" style={{ position: 'relative', height: '42px', margin: 0, width: '260px' }}>
+                    <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px', color: '#94a3b8' }}>
+                      <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input
+                      className="search-box-premium"
+                      placeholder="મોભી, સભ્ય કે ગામથી શોધો..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      style={{ width: '100%', height: '42px', padding: '8px 12px 8px 38px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Summary Metrics Bar */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '20px' }}>
+                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '14px 18px' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#1e40af', fontWeight: '700', display: 'block' }}>👑 કુલ કૌટુંબિક મોભીઓ</span>
+                  <h3 style={{ margin: '4px 0 0 0', color: '#1e3a8a', fontSize: '1.4rem', fontWeight: '800' }}>
+                    {familyDirectory.length} કુટુંબો
+                  </h3>
+                </div>
+
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '14px 18px' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#166534', fontWeight: '700', display: 'block' }}>👨‍👩‍👧‍👦 નોંધાયેલ પરિજનો (Sub-Members)</span>
+                  <h3 style={{ margin: '4px 0 0 0', color: '#14532d', fontSize: '1.4rem', fontWeight: '800' }}>
+                    {familyDirectory.reduce((acc, f) => acc + (f.subMembers ? f.subMembers.filter(m => m.status === 'approved').length : 0), 0)} સભ્યો
+                  </h3>
+                </div>
+
+                <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '12px', padding: '14px 18px' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#6b21a8', fontWeight: '700', display: 'block' }}>🌐 સમાજ કુલ વસ્તી (Population)</span>
+                  <h3 style={{ margin: '4px 0 0 0', color: '#581c87', fontSize: '1.4rem', fontWeight: '800' }}>
+                    {familyDirectory.reduce((acc, f) => acc + (f.totalFamilyCount || 1), 0)} સભ્યો
+                  </h3>
+                </div>
+              </div>
+
+              {/* Master-Detail Split Grid */}
+              {(() => {
+                const filteredList = familyDirectory.filter(item => {
+                  if (!search) return true;
+                  const s = search.toLowerCase();
+                  const headMatch = (item.name || "").toLowerCase().includes(s) || (item.village || "").toLowerCase().includes(s) || (item.mobile || "").includes(s);
+                  const subMatch = item.subMembers && item.subMembers.some(m => (m.name || "").toLowerCase().includes(s));
+                  return headMatch || subMatch;
+                });
+
+                const dirItemsPerPage = 5;
+                const totalDirPages = Math.ceil(filteredList.length / dirItemsPerPage) || 1;
+                const activeDirPage = Math.min(directoryCurrentPage, totalDirPages);
+                const paginatedList = filteredList.slice((activeDirPage - 1) * dirItemsPerPage, activeDirPage * dirItemsPerPage);
+                const activeHead = filteredList.find(f => f._id === selectedDirectoryHeadId) || paginatedList[0] || filteredList[0];
+
+                if (filteredList.length === 0) {
+                  return (
+                    <div style={{ textAlign: 'center', padding: '50px 20px', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
+                      <div style={{ fontSize: '2.5rem' }}>👨‍👩‍👧‍👦</div>
+                      <p style={{ color: '#64748b', margin: '10px 0 0 0' }}>કોઈ કૌટુંબિક માહિતી મળેલ નથી.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="family-split-container" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px', minHeight: '520px' }}>
+                    {/* Left Column: Family Heads List */}
+                    <div className="family-heads-master-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '4px' }}>
+                      <h4 style={{ margin: '0 0 4px 0', fontSize: '0.88rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        👑 કુટુંબ મોભીઓની યાદી ({filteredList.length})
+                      </h4>
+                      {paginatedList.map((item) => {
+                        const isSelected = activeHead && activeHead._id === item._id;
+                        const approvedSubCount = item.subMembers ? item.subMembers.filter(m => m.status === 'approved').length : 0;
+                        const pendingSubCount = item.subMembers ? item.subMembers.filter(m => m.status === 'pending').length : 0;
+
+                        return (
+                          <div
+                            key={item._id}
+                            onClick={() => setSelectedDirectoryHeadId(item._id)}
+                            style={{
+                              padding: '14px',
+                              borderRadius: '12px',
+                              border: isSelected ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                              background: isSelected ? '#eff6ff' : '#ffffff',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              boxShadow: isSelected ? '0 4px 12px rgba(37,99,235,0.12)' : 'none'
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <h4 style={{ margin: 0, fontSize: '0.98rem', color: isSelected ? '#1e40af' : '#0f172a', fontWeight: '700' }}>
+                                👑 {item.name}
+                              </h4>
+                              <span style={{ fontSize: '0.75rem', background: isSelected ? '#dbeafe' : '#f1f5f9', color: isSelected ? '#1e40af' : '#475569', padding: '2px 8px', borderRadius: '12px', fontWeight: '700' }}>
+                                {1 + approvedSubCount} સભ્યો
+                              </span>
+                            </div>
+                            <p style={{ margin: '4px 0 0 0', fontSize: '0.83rem', color: '#64748b' }}>
+                              🏘 {item.village} • 📞 {item.mobile}
+                            </p>
+                            {pendingSubCount > 0 && (
+                              <span style={{ display: 'inline-block', marginTop: '6px', fontSize: '0.75rem', background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: '4px', fontWeight: '700' }}>
+                                ⏳ {pendingSubCount} મંજૂરી બાકી
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Pagination Controls for Family Directory */}
+                      {totalDirPages > 1 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', padding: '8px 10px', background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                          <button
+                            disabled={activeDirPage === 1}
+                            onClick={() => setDirectoryCurrentPage(prev => Math.max(prev - 1, 1))}
+                            style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: activeDirPage === 1 ? '#f1f5f9' : '#ffffff', color: activeDirPage === 1 ? '#94a3b8' : '#1e3a8a', cursor: activeDirPage === 1 ? 'not-allowed' : 'pointer', fontWeight: '700', fontSize: '0.78rem' }}
+                          >
+                            ◄ પાછળ
+                          </button>
+                          <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '700' }}>
+                            {activeDirPage} / {totalDirPages}
+                          </span>
+                          <button
+                            disabled={activeDirPage === totalDirPages}
+                            onClick={() => setDirectoryCurrentPage(prev => Math.min(prev + 1, totalDirPages))}
+                            style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: activeDirPage === totalDirPages ? '#f1f5f9' : '#ffffff', color: activeDirPage === totalDirPages ? '#94a3b8' : '#1e3a8a', cursor: activeDirPage === totalDirPages ? 'not-allowed' : 'pointer', fontWeight: '700', fontSize: '0.78rem' }}
+                          >
+                            આગળ ►
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right Column: Detailed Family Tree Inspector */}
+                    {activeHead ? (
+                      <div className="family-tree-detail-panel" style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '14px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {/* Family Head Banner */}
+                        <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#1e3a8a', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', fontWeight: '800' }}>
+                              👑
+                            </div>
+                            <div>
+                              <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.2rem' }}>{activeHead.name}</h3>
+                              <p style={{ margin: '2px 0 0 0', fontSize: '0.88rem', color: '#64748b' }}>
+                                👑 કુટુંબના મોભી • 🏘 {activeHead.village} • 📞 <a href={`tel:${activeHead.mobile}`} style={{ color: '#2563eb', fontWeight: '700', textDecoration: 'none' }}>{activeHead.mobile} 📲 (કોલ કરો)</a>
+                              </p>
+                            </div>
+                          </div>
+                          <div style={{ background: '#dbeafe', color: '#1e40af', border: '1px solid #93c5fd', padding: '8px 16px', borderRadius: '10px', fontWeight: '800', fontSize: '0.95rem' }}>
+                            👨‍👩‍👧‍👦 પરગણા કૌટુંબિક ફંડ: <strong>{activeHead.totalFamilyCount} સભ્યો</strong>
+                          </div>
+                        </div>
+
+                        {/* Sub-members List Section */}
+                        <div>
+                          <h4 style={{ margin: '0 0 12px 0', fontSize: '1.05rem', color: '#1e3a8a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            👨‍👩‍👧‍👦 કુટુંબના તમામ જોડાયેલા પરિજનો ({activeHead.subMembers ? activeHead.subMembers.length : 0})
+                          </h4>
+
+                          {activeHead.subMembers && activeHead.subMembers.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                              {activeHead.subMembers.map((subM) => (
+                                <div key={subM._id} style={{ background: '#ffffff', border: subM.status === 'approved' ? '1px solid #cbd5e1' : '1.5px solid #f59e0b', borderRadius: '10px', padding: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <span style={{ fontSize: '1.3rem' }}>
+                                      {subM.relation === 'Father' || subM.relation === 'Mother' ? '👴' : subM.relation === 'Wife' ? '👩' : subM.relation === 'Son' ? '👦' : '👧'}
+                                    </span>
+                                    <div>
+                                      <h4 style={{ margin: 0, fontSize: '0.98rem', color: '#0f172a' }}>{subM.name}</h4>
+                                      <p style={{ margin: '2px 0 0 0', fontSize: '0.83rem', color: '#64748b' }}>
+                                        🤝 સંબંધ: <strong>{subM.relation}</strong> • 🎂 ઉંમર: {subM.age || '-'} વર્ષ • 🚻 જાતિ: {subM.gender} {subM.occupation ? `• 💼 ${subM.occupation}` : ''} {subM.mobile ? `• 📞 ${subM.mobile}` : ''}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    {subM.status === 'approved' ? (
+                                      <span style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', padding: '4px 10px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '700' }}>
+                                        ✅ મંજૂર થયેલ
+                                      </span>
+                                    ) : subM.status === 'pending' ? (
+                                      <div style={{ display: 'flex', gap: '6px' }}>
+                                        <button onClick={() => handleFamilyApproval(subM._id, 'approved')} style={{ background: '#166534', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer' }}>
+                                          ✅ મંજૂર કરો
+                                        </button>
+                                        <button onClick={() => { setSelectedSubMember(subM); setRejectModalOpen(true); }} style={{ background: '#dc2626', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer' }}>
+                                          ❌ નામંજૂર
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <span style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', padding: '4px 10px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '700' }}>
+                                        ❌ નામંજૂર ({subM.rejectionReason || 'અમાન્ય'})
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '24px', textAlign: 'center', color: '#64748b' }}>
+                              💡 આ મોભી સાથે હજુ કોઈ અન્ય કૌટુંબિક સભ્ય ઉમેરાયેલ નથી. (માત્ર મોભી પોતે ૧ સભ્ય ગણાશે)
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* Community Members List Tab */}
+          {tab === "members" && (() => {
+            const itemsPerPage = 10;
+            const filteredMembers = members.filter(m =>
+              !search || (m.name && m.name.toLowerCase().includes(search.toLowerCase())) ||
+              (m.village && m.village.toLowerCase().includes(search.toLowerCase())) ||
+              (m.mobile && m.mobile.includes(search))
+            );
+            const totalPages = Math.ceil(filteredMembers.length / itemsPerPage) || 1;
+            const activePage = Math.min(memberCurrentPage, totalPages);
+            const paginatedMembers = filteredMembers.slice((activePage - 1) * itemsPerPage, activePage * itemsPerPage);
+
+            return (
+              <div className="page-card table-panel animate-fade-in">
+                {/* Header */}
+                <div className="panel-header-flex" style={{ borderBottom: '1.5px solid #e2e8f0', paddingBottom: '16px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                  <div>
+                    <h2 style={{ color: '#1e3a8a', display: 'flex', alignItems: 'center', gap: '10px', margin: 0, fontSize: '1.4rem' }}>
+                      👥 સભ્ય યાદી
+                    </h2>
+                    <p className="panel-subtitle" style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '0.9rem' }}>
+                      પંચશીલ સમાજના તમામ મંજૂર સભ્યોની સૂચિ
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '8px 16px', fontWeight: '700', color: '#1e40af', fontSize: '0.9rem' }}>
+                      કુલ: {members.length} સભ્ય
+                    </div>
+                    <div className="search-wrapper" style={{ position: 'relative', height: '42px', margin: 0, width: '240px' }}>
+                      <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px', color: '#94a3b8' }}>
+                        <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                      </svg>
+                      <input
+                        className="search-box-premium"
+                        placeholder="નામ, ગામ, ફોન શોધો..."
+                        value={search}
+                        onChange={(e) => { setSearch(e.target.value); setMemberCurrentPage(1); }}
+                        style={{ width: '100%', height: '42px', padding: '8px 12px 8px 38px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {filteredMembers.length === 0 ? (
+                  <div className="empty-search-state" style={{ padding: '60px 20px', textAlign: 'center' }}>
+                    <div className="empty-icon" style={{ fontSize: '3rem', marginBottom: '12px' }}>🔍</div>
+                    <p style={{ color: '#64748b', fontSize: '1rem' }}>કોઈ સભ્ય મળ્યા નહીં. કૃપા કરીને અલગ શોધ કરો.</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Desktop Table */}
+                    <div className="table-responsive-desktop">
+                      <table className="dashboard-table-premium">
+                        <thead>
+                          <tr>
+                            <th style={{ width: '50px' }}>#</th>
+                            <th>સભ્યનું નામ</th>
+                            <th>મોબાઇલ નંબર</th>
+                            <th>ગામ</th>
+                            <th>ઉંમર</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {paginatedMembers.map((m, idx) => (
+                            <tr key={m._id}>
+                              <td style={{ color: '#94a3b8', fontWeight: 600 }}>{(activePage - 1) * itemsPerPage + idx + 1}</td>
+                              <td className="member-name-cell">
+                                <div className="member-avatar-mini">{m.name ? m.name.charAt(0) : '?'}</div>
+                                <span className="member-name-text">{m.name}</span>
+                              </td>
+                              <td className="phone-cell"><span>📞</span> {m.mobile || '—'}</td>
+                              <td><span className="village-badge-table">{m.village || '—'}</span></td>
+                              <td>{m.age ? `${m.age} વર્ષ` : '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile Cards */}
+                    <div className="table-responsive-mobile">
+                      <div className="member-cards-grid">
+                        {paginatedMembers.map((m) => (
+                          <div key={m._id} className="member-mobile-card">
+                            <div className="member-mobile-card-header">
+                              <div className="member-avatar-mini">{m.name ? m.name.charAt(0) : '?'}</div>
+                              <h4>{m.name}</h4>
+                            </div>
+                            <div className="member-mobile-card-body">
+                              <div className="info-row"><span>📞 ફોન:</span><strong>{m.mobile || '—'}</strong></div>
+                              <div className="info-row"><span>🏘️ ગામ:</span><span className="village-badge-table">{m.village || '—'}</span></div>
+                              {m.age && <div className="info-row"><span>🎂 ઉંમર:</span><span>{m.age} વર્ષ</span></div>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="pagination-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', padding: '12px 16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #cbd5e1', flexWrap: 'wrap', gap: '10px' }}>
+                        <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '600' }}>
+                          કુલ <strong>{filteredMembers.length}</strong> સભ્યો માંથી <strong>{(activePage - 1) * itemsPerPage + 1} - {Math.min(activePage * itemsPerPage, filteredMembers.length)}</strong> બતાવ્યા (પૃષ્ઠ {activePage} / {totalPages})
+                        </span>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <button
+                            disabled={activePage === 1}
+                            onClick={() => setMemberCurrentPage(prev => Math.max(prev - 1, 1))}
+                            style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', background: activePage === 1 ? '#f1f5f9' : '#ffffff', color: activePage === 1 ? '#94a3b8' : '#1e3a8a', cursor: activePage === 1 ? 'not-allowed' : 'pointer', fontWeight: '700', fontSize: '0.85rem' }}
+                          >
+                            ← પાછળ
+                          </button>
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+                            <button
+                              key={pg}
+                              onClick={() => setMemberCurrentPage(pg)}
+                              style={{ padding: '6px 12px', borderRadius: '6px', border: pg === activePage ? '1.5px solid #2563eb' : '1px solid #cbd5e1', background: pg === activePage ? '#2563eb' : '#ffffff', color: pg === activePage ? '#ffffff' : '#475569', cursor: 'pointer', fontWeight: '700', fontSize: '0.85rem' }}
+                            >
+                              {pg}
+                            </button>
+                          ))}
+                          <button
+                            disabled={activePage === totalPages}
+                            onClick={() => setMemberCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', background: activePage === totalPages ? '#f1f5f9' : '#ffffff', color: activePage === totalPages ? '#94a3b8' : '#1e3a8a', cursor: activePage === totalPages ? 'not-allowed' : 'pointer', fontWeight: '700', fontSize: '0.85rem' }}
+                          >
+                            આગળ →
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Profile Tab */}
           {tab === "profile" && (
@@ -487,85 +1569,90 @@ function DashboardPage({ onNavigate }) {
 
           {/* Community Summary Tab */}
           {tab === "community" && (
-            <>
-              <DashboardCards profile={profile} summary={summary} payment={payment} />
-              <div className="page-card community-panel">
-                <div className="panel-header">
-                  <h2>🌍 સમાજ માહિતી અને વિગતો</h2>
-                  <p className="panel-subtitle">પંચશીલ સમાજના સંગઠન અને આંકડાકીય વિગતો</p>
+            <div className="community-tab-wrapper">
+              {/* Hero Banner */}
+              <div className="community-hero-banner">
+                <div className="community-hero-content">
+                  <div className="community-hero-badge">🌐 પંચશીલ સમાજ</div>
+                  <h1 className="community-hero-title">સ્વાગત છે, {profile?.name?.split(" ")[0] || "સભ્ય"}!</h1>
+                  <p className="community-hero-subtitle">
+                    આ પ્લેટફોર્મ પર આપ સૌ સમાજ સભ્યોની માહિતી, ગામ-સૂચિ, <br/>
+                    અને ફંડ-ની વ્યવસ્થા એક જ સ્થળે ઉપલબ્ધ છે.
+                  </p>
                 </div>
-                <div className="community-villages-section">
-                  <h3>🏘 જોડાયેલા ગામોની યાદી</h3>
-                  <div className="village-tags-container">
-                    {(summary.villages || []).map((v, index) => (
-                      <div key={v} className="village-badge-tag">
-                        <span className="tag-number">{index + 1}</span>
-                        <span className="tag-name">{v}</span>
+                <div className="community-hero-illustration">🏛️</div>
+              </div>
+
+              {/* Stat Cards Row */}
+              <div className="community-stat-row">
+                <div className="comm-stat-card comm-stat-blue">
+                  <div className="comm-stat-icon">👥</div>
+                  <div className="comm-stat-body">
+                    <span className="comm-stat-label">કુલ સભ્યો</span>
+                    <span className="comm-stat-value">{(summary.totalMembers || payment.totalMembers || 0).toLocaleString('gu-IN')}</span>
+                  </div>
+                  <div className="comm-stat-glow"></div>
+                </div>
+                <div className="comm-stat-card comm-stat-green">
+                  <div className="comm-stat-icon">🏘</div>
+                  <div className="comm-stat-body">
+                    <span className="comm-stat-label">જોડાયેલ ગામો</span>
+                    <span className="comm-stat-value">{(summary.totalVillages || (summary.villages || []).length || 0).toLocaleString('gu-IN')}</span>
+                  </div>
+                  <div className="comm-stat-glow"></div>
+                </div>
+                <div className="comm-stat-card comm-stat-purple">
+                  <div className="comm-stat-icon">🤝</div>
+                  <div className="comm-stat-body">
+                    <span className="comm-stat-label">સહાય ફંડ</span>
+                    <span className="comm-stat-value">₹50/સભ્ય</span>
+                  </div>
+                  <div className="comm-stat-glow"></div>
+                </div>
+                <div className="comm-stat-card comm-stat-orange">
+                  <div className="comm-stat-icon">🛡️</div>
+                  <div className="comm-stat-body">
+                    <span className="comm-stat-label">સ્ટેટ્સ</span>
+                    <span className="comm-stat-value" style={{ color: '#10b981', fontSize: '1rem' }}>● સક્રિય</span>
+                  </div>
+                  <div className="comm-stat-glow"></div>
+                </div>
+              </div>
+
+              {/* Village Grid */}
+              <div className="community-villages-card">
+                <div className="village-card-header">
+                  <div>
+                    <h2 className="village-card-title">🏘 જોડાયેલા ગામોની યાદી</h2>
+                    <p className="village-card-sub">પંચશીલ સમાજ સાથે જોડાયેલ તમામ ગામ</p>
+                  </div>
+                  <div className="village-count-pill">{(summary.villages || []).length} ગામ</div>
+                </div>
+                <div className="village-grid">
+                  {(summary.villages || []).map((v, index) => {
+                    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#84cc16', '#f97316', '#6366f1'];
+                    const color = colors[index % colors.length];
+                    return (
+                      <div key={v} className="village-grid-card" style={{ '--village-color': color }}>
+                        <div className="village-grid-number">{index + 1}</div>
+                        <div className="village-grid-icon" style={{ background: `${color}18`, color }}>🏠</div>
+                        <div className="village-grid-name">{v}</div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Members List Tab */}
-          {tab === "members" && (
-            <div className="page-card table-panel">
-              <div className="panel-header-flex">
-                <div className="panel-title-area">
-                  <h2>👥 સભ્યોની યાદી</h2>
-                  <p className="panel-subtitle">સમાજના તમામ સભ્યોની સંપર્ક માહિતી</p>
-                </div>
-                <div className="search-wrapper">
-                  <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </svg>
-                  <input className="search-box-premium" placeholder="નામ કે ગામથી શોધો..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                    );
+                  })}
                 </div>
               </div>
 
-              {members.length > 0 ? (
-                <>
-                  <div className="table-responsive-desktop">
-                    <table className="dashboard-table-premium">
-                      <thead>
-                        <tr><th>સભ્યનું નામ</th><th>મોબાઇલ નંબર</th><th>ગામ</th></tr>
-                      </thead>
-                      <tbody>
-                        {members.filter(m => matchesSearch(m, search)).map((m) => (
-                          <tr key={m._id}>
-                            <td className="member-name-cell">
-                              <div className="member-avatar-mini">{m.name ? m.name.charAt(0) : "👤"}</div>
-                              <span className="member-name-text">{m.name}</span>
-                            </td>
-                            <td className="phone-cell"><span>📞</span> {m.mobile}</td>
-                            <td><span className="village-badge-table">{m.village}</span></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="table-responsive-mobile">
-                    <div className="member-cards-grid">
-                      {members.filter(m => matchesSearch(m, search)).map((m) => (
-                        <div key={m._id} className="member-mobile-card">
-                          <div className="member-mobile-card-header">
-                            <div className="member-avatar-mini">{m.name ? m.name.charAt(0) : "👤"}</div>
-                            <h4>{m.name}</h4>
-                          </div>
-                          <div className="member-mobile-card-body">
-                            <div className="info-row"><span>📞 ફોન:</span><strong>{m.mobile}</strong></div>
-                            <div className="info-row"><span>🏘 ગામ:</span><span className="village-badge-table">{m.village}</span></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="empty-search-state"><div className="empty-icon">🔍</div><p>કોઈ સભ્યો મળ્યા નથી. કૃપા કરીને અન્ય નામ અથવા ગામ શોધો.</p></div>
-              )}
+              {/* About Section */}
+              <div className="community-about-card">
+                <div className="about-left">
+                  <span className="about-tag">📖 અમારા વિશે</span>
+                  <h3 className="about-title">પંચશીલ સમાજ — એક સૂત્ર, એક ઉદ્દેશ</h3>
+                  <p className="about-desc">
+                    ?????? ???? ? ????? ????? ???-???? ??? ??????? ??? ???????
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -646,29 +1733,31 @@ function DashboardPage({ onNavigate }) {
                   <div className="form-grid-2col">
                     <div>
                       <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '700', color: '#1e293b', marginBottom: '6px' }}>
-                        🏘 ગામનું નામ *
+                        🏘 સભ્યનું ગામ (Registered Village) *
                       </label>
-                      <input
-                        type="text"
+                      <select
                         required
-                        placeholder="દા.ત. પાલનપુર"
                         value={deathForm.village}
                         onChange={(e) => setDeathForm({ ...deathForm, village: e.target.value })}
-                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc' }}
-                      />
+                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#ffffff', cursor: 'pointer' }}
+                      >
+                        <option value="">-- નોંધાયેલ ગામ પસંદ કરો --</option>
+                        {availableVillages.map((v) => (
+                          <option key={v} value={v}>{v}</option>
+                        ))}
+                      </select>
                     </div>
 
                     <div>
                       <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '700', color: '#1e293b', marginBottom: '6px' }}>
-                        📅 મૃત્યુ તારીખ *
+                        📅 મૃત્યુ તારીખ (Calendar) *
                       </label>
                       <input
-                        type="text"
+                        type="date"
                         required
-                        placeholder="DD/MM/YYYY (દા.ત. 28/07/2026)"
                         value={deathForm.deathDate}
                         onChange={(e) => setDeathForm({ ...deathForm, deathDate: e.target.value })}
-                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc' }}
+                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#ffffff', cursor: 'pointer' }}
                       />
                     </div>
                   </div>
@@ -676,15 +1765,14 @@ function DashboardPage({ onNavigate }) {
                   <div className="form-grid-2col">
                     <div>
                       <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '700', color: '#1e293b', marginBottom: '6px' }}>
-                        ⏳ ચુકવણીની અંતિમ તારીખ (Due Date) *
+                        ⏳ ચુકવણીની અંતિમ તારીખ (Calendar Due Date) *
                       </label>
                       <input
-                        type="text"
+                        type="date"
                         required
-                        placeholder="DD/MM/YYYY (દા.ત. 05/08/2026)"
                         value={deathForm.dueDate}
                         onChange={(e) => setDeathForm({ ...deathForm, dueDate: e.target.value })}
-                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc' }}
+                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#ffffff', cursor: 'pointer' }}
                       />
                     </div>
 
@@ -735,63 +1823,147 @@ function DashboardPage({ onNavigate }) {
                   📋 તાજેતરમાં જાહેર કરેલ સહાય ફંડ ની યાદી
                 </h3>
                 <div className="scroll-hint-bar">👈 ડાબે-જમણે સ્ક્રૉલ કરો (Scroll Side-to-Side) 👉</div>
-                <div className="table-scroll-container">
-                  <table className="dashboard-table-premium">
-                    <thead>
-                      <tr>
-                        <th>સ્વર્ગસ્થ સભ્યનું નામ</th>
-                        <th>ગામ</th>
-                        <th>મૃત્યુ તારીખ</th>
-                        <th>અંતિમ તારીખ</th>
-                        <th>રકમ per Member</th>
-                        <th>સ્થિતિ</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {payment.activeDeathReport ? (
-                        <tr>
-                          <td><strong>{payment.activeDeathReport.deceasedName}</strong></td>
-                          <td><span className="village-badge-table">{payment.activeDeathReport.village}</span></td>
-                          <td>{payment.activeDeathReport.deathDate}</td>
-                          <td>{payment.activeDeathReport.dueDate}</td>
-                          <td><strong style={{ color: '#166534' }}>₹50</strong></td>
-                          <td><span className="status-pill active" style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac' }}>🟢 સક્રિય (Active)</span></td>
-                        </tr>
-                      ) : (
-                        <tr>
-                          <td colSpan="6" style={{ textAlign: 'center', color: '#64748b' }}>કોઈ સક્રિય મરણ નોંધ નથી.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
 
-                {/* Mobile Cards View for Recently Active Death Events */}
-                <div className="death-report-mobile-cards">
-                  {payment.activeDeathReport ? (
-                    <div className="death-report-card">
-                      <div className="death-report-card-header">
-                        <div>
-                          <h4 style={{ margin: 0, fontSize: '1rem', color: '#0f172a' }}>{payment.activeDeathReport.deceasedName}</h4>
-                          <span className="village-badge-table" style={{ marginTop: '4px', display: 'inline-block' }}>{payment.activeDeathReport.village}</span>
-                        </div>
-                        <strong style={{ color: '#166534', fontSize: '1.1rem' }}>₹50</strong>
+                {(() => {
+                  const itemsPerPage = 5;
+                  const totalEvents = pendingDeaths && pendingDeaths.length > 0 ? pendingDeaths.length : (payment.activeDeathReport ? 1 : 0);
+                  const totalPages = Math.ceil(totalEvents / itemsPerPage) || 1;
+                  const activePage = Math.min(deathCurrentPage, totalPages);
+
+                  const paginatedDeaths = pendingDeaths && pendingDeaths.length > 0
+                    ? pendingDeaths.slice((activePage - 1) * itemsPerPage, activePage * itemsPerPage)
+                    : [];
+
+                  return (
+                    <>
+                      <div className="table-scroll-container">
+                        <table className="dashboard-table-premium">
+                          <thead>
+                            <tr>
+                              <th>સ્વર્ગસ્થ સભ્યનું નામ</th>
+                              <th>ગામ</th>
+                              <th>મૃત્યુ તારીખ</th>
+                              <th>અંતિમ તારીખ</th>
+                              <th>રકમ per Member</th>
+                              <th>સ્થિતિ</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {paginatedDeaths.length > 0 ? (
+                              paginatedDeaths.map((event) => (
+                                <tr key={event.id || event._id || event.name}>
+                                  <td><strong>{event.name}</strong></td>
+                                  <td><span className="village-badge-table">{event.village}</span></td>
+                                  <td>{event.deathDate}</td>
+                                  <td>{event.dueDate}</td>
+                                  <td><strong style={{ color: '#166534' }}>₹{event.amount || 50}</strong></td>
+                                  <td><span className="status-pill active" style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac' }}>🟢 સક્રિય (Active)</span></td>
+                                </tr>
+                              ))
+                            ) : payment.activeDeathReport ? (
+                              <tr>
+                                <td><strong>{payment.activeDeathReport.deceasedName}</strong></td>
+                                <td><span className="village-badge-table">{payment.activeDeathReport.village}</span></td>
+                                <td>{payment.activeDeathReport.deathDate}</td>
+                                <td>{payment.activeDeathReport.dueDate}</td>
+                                <td><strong style={{ color: '#166534' }}>₹50</strong></td>
+                                <td><span className="status-pill active" style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac' }}>🟢 સક્રિય (Active)</span></td>
+                              </tr>
+                            ) : (
+                              <tr>
+                                <td colSpan="6" style={{ textAlign: 'center', color: '#64748b' }}>કોઈ સક્રિય મરણ નોંધ નથી.</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
                       </div>
-                      <div className="death-report-card-body">
-                        <div className="info-row"><span>📅 મૃત્યુ તારીખ:</span> <span>{payment.activeDeathReport.deathDate}</span></div>
-                        <div className="info-row"><span>⏳ અંતિમ તારીખ:</span> <span>{payment.activeDeathReport.dueDate}</span></div>
-                        <div className="info-row">
-                          <span>📌 સ્થિતિ:</span>
-                          <span className="status-pill active" style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac', fontSize: '0.75rem', padding: '2px 8px' }}>🟢 સક્રિય (Active)</span>
-                        </div>
+
+                      {/* Mobile Cards View for Recently Active Death Events */}
+                      <div className="death-report-mobile-cards">
+                        {paginatedDeaths.length > 0 ? (
+                          paginatedDeaths.map((event) => (
+                            <div key={event.id || event._id || event.name} className="death-report-card" style={{ marginBottom: '12px' }}>
+                              <div className="death-report-card-header">
+                                <div>
+                                  <h4 style={{ margin: 0, fontSize: '1rem', color: '#0f172a' }}>{event.name}</h4>
+                                  <span className="village-badge-table" style={{ marginTop: '4px', display: 'inline-block' }}>{event.village}</span>
+                                </div>
+                                <strong style={{ color: '#166534', fontSize: '1.1rem' }}>₹{event.amount || 50}</strong>
+                              </div>
+                              <div className="death-report-card-body">
+                                <div className="info-row"><span>📅 મૃત્યુ તારીખ:</span> <span>{event.deathDate}</span></div>
+                                <div className="info-row"><span>⏳ અંતિમ તારીખ:</span> <span>{event.dueDate}</span></div>
+                                <div className="info-row">
+                                  <span>📌 સ્થિતિ:</span>
+                                  <span className="status-pill active" style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac', fontSize: '0.75rem', padding: '2px 8px' }}>🟢 સક્રિય (Active)</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : payment.activeDeathReport ? (
+                          <div className="death-report-card">
+                            <div className="death-report-card-header">
+                              <div>
+                                <h4 style={{ margin: 0, fontSize: '1rem', color: '#0f172a' }}>{payment.activeDeathReport.deceasedName}</h4>
+                                <span className="village-badge-table" style={{ marginTop: '4px', display: 'inline-block' }}>{payment.activeDeathReport.village}</span>
+                              </div>
+                              <strong style={{ color: '#166534', fontSize: '1.1rem' }}>₹50</strong>
+                            </div>
+                            <div className="death-report-card-body">
+                              <div className="info-row"><span>📅 મૃત્યુ તારીખ:</span> <span>{payment.activeDeathReport.deathDate}</span></div>
+                              <div className="info-row"><span>⏳ અંતિમ તારીખ:</span> <span>{payment.activeDeathReport.dueDate}</span></div>
+                              <div className="info-row">
+                                <span>📌 સ્થિતિ:</span>
+                                <span className="status-pill active" style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac', fontSize: '0.75rem', padding: '2px 8px' }}>🟢 સક્રિય (Active)</span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ textAlign: 'center', color: '#64748b', padding: '20px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                            કોઈ સક્રિય મરણ નોંધ નથી.
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ) : (
-                    <div style={{ textAlign: 'center', color: '#64748b', padding: '20px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                      કોઈ સક્રિય મરણ નોંધ નથી.
-                    </div>
-                  )}
-                </div>
+
+                      {/* Death Events Pagination Controls */}
+                      {totalPages > 1 && (
+                        <div className="pagination-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', padding: '12px 16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #cbd5e1', flexWrap: 'wrap', gap: '10px' }}>
+                          <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '600' }}>
+                            કુલ <strong>{totalEvents}</strong> સદગત નોંધોમાંથી <strong>{(activePage - 1) * itemsPerPage + 1} - {Math.min(activePage * itemsPerPage, totalEvents)}</strong> દર્શાવેલ છે (પેજ {activePage} / {totalPages})
+                          </span>
+
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <button
+                              disabled={activePage === 1}
+                              onClick={() => setDeathCurrentPage(prev => Math.max(prev - 1, 1))}
+                              style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', background: activePage === 1 ? '#f1f5f9' : '#ffffff', color: activePage === 1 ? '#94a3b8' : '#1e3a8a', cursor: activePage === 1 ? 'not-allowed' : 'pointer', fontWeight: '700', fontSize: '0.85rem' }}
+                            >
+                              ◄ પાછળ (Previous)
+                            </button>
+
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+                              <button
+                                key={pg}
+                                onClick={() => setDeathCurrentPage(pg)}
+                                style={{ padding: '6px 12px', borderRadius: '6px', border: pg === activePage ? '1.5px solid #2563eb' : '1px solid #cbd5e1', background: pg === activePage ? '#2563eb' : '#ffffff', color: pg === activePage ? '#ffffff' : '#475569', cursor: 'pointer', fontWeight: '700', fontSize: '0.85rem' }}
+                              >
+                                {pg}
+                              </button>
+                            ))}
+
+                            <button
+                              disabled={activePage === totalPages}
+                              onClick={() => setDeathCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                              style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', background: activePage === totalPages ? '#f1f5f9' : '#ffffff', color: activePage === totalPages ? '#94a3b8' : '#1e3a8a', cursor: activePage === totalPages ? 'not-allowed' : 'pointer', fontWeight: '700', fontSize: '0.85rem' }}
+                            >
+                              આગળ (Next) ►
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -844,29 +2016,31 @@ function DashboardPage({ onNavigate }) {
                       <div className="form-grid-2col">
                         <div>
                           <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
-                            🏘 ગામનું નામ *
+                            🏘 સભ્યનું ગામ (Registered Village) *
                           </label>
-                          <input
-                            type="text"
+                          <select
                             required
-                            placeholder="દા.ત. પાલનપુર"
                             value={deathForm.village}
                             onChange={(e) => setDeathForm({ ...deathForm, village: e.target.value })}
-                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
-                          />
+                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: '#ffffff', cursor: 'pointer' }}
+                          >
+                            <option value="">-- નોંધાયેલ ગામ પસંદ કરો --</option>
+                            {availableVillages.map((v) => (
+                              <option key={v} value={v}>{v}</option>
+                            ))}
+                          </select>
                         </div>
 
                         <div>
                           <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
-                            📅 મૃત્યુ તારીખ *
+                            📅 મૃત્યુ તારીખ (Calendar) *
                           </label>
                           <input
-                            type="text"
+                            type="date"
                             required
-                            placeholder="DD/MM/YYYY (દા.ત. 28/07/2026)"
                             value={deathForm.deathDate}
                             onChange={(e) => setDeathForm({ ...deathForm, deathDate: e.target.value })}
-                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
+                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: '#ffffff', cursor: 'pointer' }}
                           />
                         </div>
                       </div>
@@ -874,15 +2048,14 @@ function DashboardPage({ onNavigate }) {
                       <div className="form-grid-2col">
                         <div>
                           <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
-                            ⏳ ચુકવણીની અંતિમ તારીખ (Due Date) *
+                            ⏳ ચુકવણીની અંતિમ તારીખ (Calendar Due Date) *
                           </label>
                           <input
-                            type="text"
+                            type="date"
                             required
-                            placeholder="DD/MM/YYYY (દા.ત. 05/08/2026)"
                             value={deathForm.dueDate}
                             onChange={(e) => setDeathForm({ ...deathForm, dueDate: e.target.value })}
-                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
+                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: '#ffffff', cursor: 'pointer' }}
                           />
                         </div>
 
@@ -1189,30 +2362,42 @@ function DashboardPage({ onNavigate }) {
                     <div className="pending-list-section" style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
                       {pendingDeaths.length > 0 ? (
                         pendingDeaths.map((item) => {
+                          const familyMult = payment.familyCoveredMembers || (1 + familyMembers.filter(m => m.status === 'approved').length) || 1;
+                          const singleFee = Number(item.amount) > 0 ? Number(item.amount) : 50;
+                          const baseFamilyAmount = singleFee * familyMult;
                           const passed = isDueDatePassed(item.dueDate);
-                          const calculatedItemAmount = passed ? Number(item.amount) + 50 : Number(item.amount);
+                          const calculatedItemAmount = passed ? baseFamilyAmount + (50 * familyMult) : baseFamilyAmount;
                           return (
-                            <div key={item.id} className="pending-death-item" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: passed ? '1px solid #f87171' : '1px solid #e2e8f0' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div key={item.id} className="pending-death-item" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px', background: '#f8fafc', borderRadius: '10px', border: passed ? '1.5px solid #f87171' : '1.5px solid #cbd5e1' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                                 <div className="death-item-info" style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-                                  <span className="death-icon" style={{ fontSize: '1.25rem' }}>💐</span>
+                                  <span className="death-icon" style={{ fontSize: '1.4rem' }}>💐</span>
                                   <div>
-                                    <h4 style={{ margin: 0, color: '#1e293b', fontSize: '1rem' }}>{item.name}</h4>
+                                    <h4 style={{ margin: 0, color: '#1e293b', fontSize: '1.05rem' }}>{item.name}</h4>
                                     <p style={{ margin: '2px 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>{item.village} • અંતિમ તારીખ: {item.dueDate}</p>
                                   </div>
                                 </div>
-                                <div className="death-item-amount" style={{ fontWeight: '700', color: passed ? '#ef4444' : '#1e293b', fontSize: '1.05rem' }}>
-                                  ₹{calculatedItemAmount}
+                                <div className="death-item-amount" style={{ textAlign: 'right' }}>
+                                  <div style={{ fontWeight: '800', color: passed ? '#ef4444' : '#1e3a8a', fontSize: '1.2rem' }}>
+                                    ₹{calculatedItemAmount}
+                                  </div>
+                                  <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600' }}>
+                                    ({familyMult} સભ્યો × ₹{singleFee})
+                                  </span>
                                 </div>
                               </div>
 
+                              <div style={{ fontSize: '0.82rem', color: '#1e40af', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '6px 10px', borderRadius: '6px', fontWeight: '600' }}>
+                                👨‍👩‍👧‍👦 કુટુંબ કુલ નોંધાયેલ મંજૂર સભ્યો: <strong>{familyMult} સભ્યો</strong> (૧ મોભી + {familyMult - 1} સભ્યો)
+                              </div>
+
                               {passed ? (
-                                <div style={{ fontSize: '0.85rem', color: '#ef4444', background: '#fef2f2', padding: '6px 10px', borderRadius: '4px' }}>
-                                  ⚠️ સમયસર ચુકવણી ન કરવા બદલ ₹50 લેટ ફી પેનલ્ટી ઉમેરેલ છે. (કુલ: ₹{calculatedItemAmount})
+                                <div style={{ fontSize: '0.85rem', color: '#ef4444', background: '#fef2f2', border: '1px solid #fecaca', padding: '6px 10px', borderRadius: '6px', fontWeight: '600' }}>
+                                  ⚠️ સમયસર ચુકવણી ન કરવા બદલ પ્રતિ સભ્ય ₹૫૦ લેટ ફી પેનલ્ટી (+₹{50 * familyMult}) ઉમેરાયેલ છે.
                                 </div>
                               ) : (
-                                <div style={{ fontSize: '0.85rem', color: '#dd6b20', background: '#fffaf0', padding: '6px 10px', borderRadius: '4px' }}>
-                                  💡 માહિતી: જો તમે છેલ્લી તારીખ ({item.dueDate}) સુધીમાં ચુકવણી નહીં કરો, તો ત્યારબાદ ₹50 પેનલ્ટી (લેટ ફી) અલગથી ચૂકવવી પડશે.
+                                <div style={{ fontSize: '0.82rem', color: '#d97706', background: '#fffbeb', border: '1px solid #fde68a', padding: '6px 10px', borderRadius: '6px' }}>
+                                  💡 માહિતી: છેલ્લી તારીખ ({item.dueDate}) સુધીમાં ચુકવણી પૂર્ણ કરશો નહીં તો પ્રતિ સભ્ય ₹૫૦ લેટ ફી પેનલ્ટી ઉમેરાશે.
                                 </div>
                               )}
                             </div>
@@ -1401,6 +2586,74 @@ function DashboardPage({ onNavigate }) {
                     </div>
                   </div>
 
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Member Details Inspection Modal */}
+          {inspectItem && (
+            <div className="add-death-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(15,23,42,0.65)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999, padding: '20px' }}>
+              <div className="add-death-modal-content" style={{ background: '#ffffff', borderRadius: '16px', maxWidth: '540px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '12px', marginBottom: '16px' }}>
+                  <h3 style={{ margin: 0, color: '#1e3a8a', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    🔍 સભ્ય સંપૂર્ણ વિગત ચકાસણી પત્રક (Member Verification)
+                  </h3>
+                  <button onClick={() => setInspectItem(null)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>×</button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {checkIsDuplicate(inspectItem) && (
+                    <div style={{ background: '#fef3c7', border: '1px solid #fde68a', color: '#92400e', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}>
+                      ⚠️ ચેતવણી: આ જ મોબાઇલ નંબર અથવા સમાન નામ ધરાવતો સભ્ય સમાજ રેકોર્ડમાં પૂર્વેથી જ સાચવેલ છે. કૃપા કરીને કોલ કરીને ખાતરી કરો.
+                    </div>
+                  )}
+
+                  <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div><span style={{ fontSize: '0.78rem', color: '#64748b', display: 'block' }}>👤 સભ્યનું પૂરું નામ</span><strong style={{ color: '#0f172a', fontSize: '1rem' }}>{inspectItem.name}</strong></div>
+                    <div><span style={{ fontSize: '0.78rem', color: '#64748b', display: 'block' }}>🤝 પ્રકાર / સંબંધ</span><strong style={{ color: '#1e40af', fontSize: '0.95rem' }}>{inspectItem.type === 'family' ? `${inspectItem.relation} (પરિવાર સભ્ય)` : 'મુખ્ય નોંધણી સભ્ય'}</strong></div>
+                    <div><span style={{ fontSize: '0.78rem', color: '#64748b', display: 'block' }}>📞 મોબાઇલ નંબર</span><a href={`tel:${inspectItem.mobile || inspectItem.familyHead?.mobile}`} style={{ color: '#2563eb', fontWeight: '800', fontSize: '0.95rem', textDecoration: 'none' }}>{inspectItem.mobile || inspectItem.familyHead?.mobile || 'N/A'} 📲 (કોલ કરો)</a></div>
+                    <div><span style={{ fontSize: '0.78rem', color: '#64748b', display: 'block' }}>🏘 ગામ</span><strong style={{ color: '#0f172a', fontSize: '0.95rem' }}>{inspectItem.village || inspectItem.familyHead?.village || 'N/A'}</strong></div>
+                    <div><span style={{ fontSize: '0.78rem', color: '#64748b', display: 'block' }}>🎂 ઉંમર & જાતિ</span><strong style={{ color: '#0f172a', fontSize: '0.95rem' }}>{inspectItem.age ? `${inspectItem.age} વર્ષ` : 'N/A'} • {inspectItem.gender || 'N/A'}</strong></div>
+                    <div><span style={{ fontSize: '0.78rem', color: '#64748b', display: 'block' }}>💼 વ્યવસાય / કામગીરી</span><strong style={{ color: '#0f172a', fontSize: '0.95rem' }}>{inspectItem.occupation || 'ઉપલબ્ધ નથી'}</strong></div>
+                  </div>
+
+                  {inspectItem.type === 'family' && inspectItem.familyHead && (
+                    <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '12px 14px' }}>
+                      <span style={{ fontSize: '0.78rem', color: '#1e40af', fontWeight: '700', display: 'block' }}>👑 કુટુંબના મોભી (Family Head Details)</span>
+                      <div style={{ marginTop: '4px', fontSize: '0.9rem', color: '#1e3a8a', fontWeight: '600' }}>
+                        {inspectItem.familyHead.name} • 📞 <a href={`tel:${inspectItem.familyHead.mobile}`} style={{ color: '#2563eb' }}>{inspectItem.familyHead.mobile}</a> • 🏘 {inspectItem.familyHead.village}
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+                    <a
+                      href={`tel:${inspectItem.mobile || inspectItem.familyHead?.mobile}`}
+                      style={{ flex: 1, textAlign: 'center', background: '#dbeafe', color: '#1e40af', border: '1px solid #93c5fd', padding: '10px', borderRadius: '8px', fontWeight: '700', textDecoration: 'none', fontSize: '0.9rem' }}
+                    >
+                      📞 સભ્યને કોલ કરો
+                    </a>
+                    {inspectItem.type === 'registration' ? (
+                      <>
+                        <button onClick={() => { handleUserApproval(inspectItem._id, 'approved'); setInspectItem(null); }} style={{ flex: 1, background: '#166534', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '0.9rem' }}>
+                          ✅ મંજૂર કરો
+                        </button>
+                        <button onClick={() => { handleUserApproval(inspectItem._id, 'rejected'); setInspectItem(null); }} style={{ flex: 1, background: '#dc2626', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '0.9rem' }}>
+                          ❌ નામંજૂર કરો
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => { handleFamilyApproval(inspectItem._id, 'approved'); setInspectItem(null); }} style={{ flex: 1, background: '#166534', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '0.9rem' }}>
+                          ✅ મંજૂર કરો
+                        </button>
+                        <button onClick={() => { setSelectedSubMember(inspectItem); setRejectModalOpen(true); setInspectItem(null); }} style={{ flex: 1, background: '#dc2626', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '0.9rem' }}>
+                          ❌ નામંજૂર કરો
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

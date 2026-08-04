@@ -79,11 +79,12 @@ export const generateReceiptPDF = (payment, profile = {}, existingWindow = null)
           </div>
         </div>
 
-        <div class="section-title">👤 ચૂકવનાર સભ્યની વિગતો</div>
+        <div class="section-title">👤 ચૂકવનાર સભ્યની વિગતો (Family Head)</div>
         <table class="info-table">
-          <tr><td class="label">પૂરું નામ:</td><td class="value">${memberName}</td></tr>
+          <tr><td class="label">કુટુંબના મોભીનું નામ:</td><td class="value">${memberName}</td></tr>
           <tr><td class="label">મોબાઇલ નંબર:</td><td class="value">${mobile}</td></tr>
           <tr><td class="label">ગામ:</td><td class="value">${village}</td></tr>
+          <tr><td class="label">કુટુંબના મંજૂર સભ્યો:</td><td class="value">${payment.familyCoveredMembers ? `${payment.familyCoveredMembers} સભ્યો (૧ મોભી + સભ્યો)` : '૧ સભ્ય'}</td></tr>
         </table>
 
         <div class="section-title">💐 સહાય ફંડ વિગતો (સદગત)</div>
